@@ -1,0 +1,168 @@
+/* ============================================================
+   /journal 무드저널 화면 전용 레이아웃 (토큰 기반)
+   출처: /screens/mood-journal.html <style>
+   컴포넌트(.wl-*)는 app/wolune.css 재사용, 폭은 --content-max 반응형.
+   ============================================================ */
+
+.screen {
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  min-height: 100dvh;
+  background: var(--bg-screen);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.screen__scroll {
+  flex: 1;
+  padding: 20px var(--screen-padding-x) 96px;
+}
+
+/* 헤더 */
+.journal-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.journal-head h1 { color: var(--text-primary); }
+
+/* 감정 날씨 카드 */
+.weather { display: flex; align-items: center; gap: 14px; margin-top: 12px; }
+.weather__icon {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: var(--surface-1b);
+  color: var(--lavender);
+}
+.weather__icon svg { width: 28px; height: 28px; }
+.weather__text { display: flex; flex-direction: column; gap: 4px; }
+
+/* 무드 스케일 */
+.mood-block { margin-top: 14px; }
+.mood-block .wl-mood-scale { justify-content: space-between; }
+.mood-scale-ends {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding: 0 4px;
+}
+
+/* 감정 태그 */
+.emotion-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: var(--border-width) solid var(--border-soft);
+}
+.wl-chip[aria-pressed] { border: none; }
+
+/* 메모 */
+.note-field { margin-top: 16px; }
+.note-field__area {
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+  background: var(--surface-1b);
+  border: var(--border-width) solid var(--border-input);
+  border-radius: var(--radius-input);
+  padding: 12px 14px;
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+.note-field__area::placeholder { color: var(--text-tertiary); }
+.note-field__area:focus { outline: none; border-color: var(--gold); }
+
+/* 저장 버튼 영역 */
+.save-row { margin-top: 16px; }
+.save-hint { margin-top: 10px; text-align: center; color: var(--text-tertiary); }
+
+/* 주간 무드 점 */
+.pattern__head { display: flex; align-items: center; justify-content: space-between; margin-top: 2px; }
+.pattern__progress { margin: 12px 0; }
+.week { display: flex; justify-content: space-between; margin-top: 14px; }
+.week__day { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.week__label { font-size: var(--fs-micro); color: var(--text-tertiary); }
+.week__day--today .week__label { color: var(--gold); }
+.week .wl-mood-dot { width: 22px; height: 22px; }
+
+/* 지난 기록 리스트 */
+.log-list { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.log-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: var(--radius-card);
+  border: var(--border-width) solid var(--border-soft);
+  background: var(--surface-1);
+}
+.log-item__mood {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--surface-1b);
+}
+.log-item__mood svg { width: 24px; height: 24px; }
+.log-item__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.log-item__top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.log-item__date { color: var(--text-primary); }
+.log-item__score { flex-shrink: 0; }
+.log-item__tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.log-item__note { color: var(--text-secondary); }
+.log-empty {
+  padding: 22px 16px;
+  text-align: center;
+  border-radius: var(--radius-card);
+  border: var(--border-width) dashed var(--border-soft);
+  color: var(--text-tertiary);
+}
+
+.section-gap { margin-top: 22px; }
+.journal__section-label { display: block; margin-bottom: 10px; }
+
+/* 하단 탭 고정 */
+.home__nav { position: sticky; bottom: 0; padding-bottom: env(safe-area-inset-bottom); }
+
+/* 첫 사용 / 안내 상태 */
+.journal-state {
+  flex: 1;
+  min-height: 70dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+  padding: 40px var(--screen-padding-x);
+}
+.journal-state__mark {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--surface-1b);
+  border: var(--border-width) solid var(--border-gold);
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+.journal-state__mark svg { width: 30px; height: 30px; }
+.journal-state .wl-body { max-width: 24em; }
+.journal-state__cta { width: auto; margin-top: 8px; padding: 13px 26px; }

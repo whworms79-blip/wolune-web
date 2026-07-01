@@ -75,7 +75,6 @@ function weatherOf(score: number): { title: string; desc: string } {
 
 export default function HomePage() {
   const [state, setState] = useState<State>({ status: "loading" });
-  const [moodNote, setMoodNote] = useState(false);
 
   useEffect(() => {
     const input = loadSajuInput();
@@ -262,21 +261,14 @@ export default function HomePage() {
         {/* 오늘 기분 기록하기 (무드저널 입구 — 페이지는 다음 조각) */}
         <div className="section-gap">
           <span className="wl-section-label home__quick-label">오늘의 나</span>
-          <button
-            type="button"
-            className="mood-entry"
-            onClick={() => setMoodNote(true)}
-            aria-live="polite"
-          >
+          <Link className="mood-entry" href="/journal">
             <span className="mood-entry__icon" aria-hidden="true"><NotebookPen /></span>
             <span className="mood-entry__text">
               <span className="mood-entry__title">오늘 기분 기록하기</span>
-              <span className="mood-entry__desc">
-                {moodNote ? "무드저널은 다음 업데이트에서 만나요 :)" : "지금 마음을 한 줄로 남겨보세요"}
-              </span>
+              <span className="mood-entry__desc">지금 마음을 한 줄로 남겨보세요</span>
             </span>
             <span className="mood-entry__chevron" aria-hidden="true"><ChevronRight /></span>
-          </button>
+          </Link>
         </div>
 
         {/* 바로 들어가기 */}
@@ -302,9 +294,9 @@ export default function HomePage() {
         <button className="wl-bottom-nav__tab wl-bottom-nav__tab--active" type="button" aria-current="page">
           <Moon /><span>오늘</span>
         </button>
-        <button className="wl-bottom-nav__tab" type="button" disabled>
+        <Link className="wl-bottom-nav__tab" href="/journal">
           <Notebook /><span>기록</span>
-        </button>
+        </Link>
         <Link className="wl-bottom-nav__tab" href={resultHref}>
           <LayoutGrid /><span>사주</span>
         </Link>

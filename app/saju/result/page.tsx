@@ -236,7 +236,7 @@ export default async function SajuResultPage({
       {/* 하단 4탭 (다른 화면 연결 전 — 사주 탭만 활성) */}
       <nav className="home__nav wl-bottom-nav" aria-label="주요 메뉴">
         <Link className="wl-bottom-nav__tab" href="/home"><Moon /><span>오늘</span></Link>
-        <button className="wl-bottom-nav__tab" type="button" disabled><Notebook /><span>기록</span></button>
+        <Link className="wl-bottom-nav__tab" href="/journal"><Notebook /><span>기록</span></Link>
         <button className="wl-bottom-nav__tab wl-bottom-nav__tab--active" type="button" aria-current="page">
           <LayoutGrid /><span>사주</span>
         </button>

@@ -368,6 +368,28 @@
 .wl-score-ring__value { font-size: 22px; font-weight: var(--fw-medium); line-height: 1; }
 .wl-score-ring__label { font-size: var(--fs-micro); color: var(--text-secondary); margin-top: 2px; }
 
+/* 무드 스케일 — 5단, 비선택 muted, 선택은 골드 링 */
+.wl-mood-scale { display: flex; gap: 12px; }
+.wl-mood-scale__item {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: none;
+  color: var(--mood-inactive);
+  cursor: pointer;
+  transition: border-color var(--transition-soft), color var(--transition-soft);
+}
+.wl-mood-scale__item svg { width: 30px; height: 30px; }
+.wl-mood-scale__item--selected { border-color: var(--gold); color: var(--gold); }
+
+/* 무드 점(주간) */
+.wl-mood-dot { width: 13px; height: 13px; border-radius: 50%; background: var(--lavender); }
+.wl-mood-dot--empty { background: transparent; border: 1.5px solid var(--border-soft); }
+
 /* 3.10 Character Header */
 .wl-character-header { display: flex; flex-direction: column; gap: 6px; }
 .wl-character-header__kicker { font-size: var(--fs-label); color: var(--lavender); }

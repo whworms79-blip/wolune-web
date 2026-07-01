@@ -1,40 +1,71 @@
+/* ============================================================
+   Wolune Web — globals
+   디자인 토큰(출처: styles/wolune-tokens.css)을 그대로 채택.
+   다크 퍼스트 · 밤 인디고 + 달빛 크림 + 은은한 골드.
+   ============================================================ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* 배경 / 서피스 */
+  --bg-frame: #0c0d1c;
+  --bg-screen: #16172f;   /* 화면 기본 배경(밤 인디고) */
+  --bg-nav: #101127;
+  --surface-1: #1a1b33;
+  --surface-1b: #1e2040;
+  --surface-2: #262546;
+  --surface-select: #2a2740;
+
+  /* 텍스트 */
+  --text-primary: #f3ecdd;    /* 달빛 크림 */
+  --text-secondary: #a9a7c8;
+  --text-tertiary: #7e7aa0;
+
+  /* 강조 */
+  --gold: #e8c06a;            /* 주 강조 · CTA */
+  --lavender: #c9b6f0;        /* 섹션 라벨 · 성찰 */
+  --rose: #e89bb0;
+  --on-accent: #2a2310;       /* 골드 버튼 위 텍스트 */
+
+  /* 경계선 */
+  --border-soft: #2e2848;
+  --border-gold: #4a3f6b;
+
+  /* 폰트 — voice(세리프, 우아·신비) / sans(한글 가독성)
+     voice 워드마크는 next/font(Cormorant Garamond)로 로드, --font-voice-src 주입.
+     sans는 디자인 토큰대로 시스템 스택(Pretendard/Apple SD/Malgun). */
+  --font-voice: var(--font-voice-src, Georgia), "Times New Roman",
+                "Noto Serif KR", serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Pretendard",
+               "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic",
+               sans-serif;
+
+  /* 반경 / 전환 */
+  --radius-button: 14px;
+  --transition-soft: 200ms ease;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 html {
-  height: 100%;
-}
-
-html,
-body {
+  color-scheme: dark;
   max-width: 100vw;
   overflow-x: hidden;
 }
 
 body {
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100dvh;
+  background: var(--bg-screen);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
+  text-rendering: optimizeLegibility;
 }
 
 a {
@@ -42,8 +73,155 @@ a {
   text-decoration: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
+/* ------------------------------------------------------------
+   랜딩 히어로 — 밤하늘, 미니멀
+   ------------------------------------------------------------ */
+.hero {
+  position: relative;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 22px calc(48px + env(safe-area-inset-bottom));
+  overflow: hidden;
+  text-align: center;
+}
+
+/* 밤하늘 글로우: 상단 은은한 라벤더/골드 빛, 아래로 깊어지는 인디고 */
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 80% at 50% -10%, rgba(201, 182, 240, 0.14), transparent 55%),
+    radial-gradient(90% 60% at 50% 8%, rgba(232, 192, 106, 0.10), transparent 60%),
+    linear-gradient(180deg, #191a35 0%, var(--bg-screen) 42%, #121228 100%);
+  z-index: 0;
+}
+
+/* 흩뿌린 별들 */
+.stars {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: var(--text-primary);
+  opacity: 0.5;
+  box-shadow: 0 0 4px rgba(243, 236, 221, 0.6);
+}
+.star.sm { width: 1.5px; height: 1.5px; opacity: 0.32; }
+.star.gold { background: var(--gold); box-shadow: 0 0 6px rgba(232, 192, 106, 0.7); }
+
+.hero__inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 520px;
+  width: 100%;
+}
+
+/* 브랜드 마크 — 달이 작은 별을 품은 형태(골드 초승달 + 글로우) */
+.mark {
+  width: 76px;
+  height: 76px;
+  margin-bottom: 26px;
+  filter: drop-shadow(0 0 18px rgba(232, 192, 106, 0.35));
+}
+
+.wordmark {
+  font-family: var(--font-voice);
+  font-size: clamp(40px, 12vw, 56px);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.tagline {
+  font-family: var(--font-voice);
+  font-size: clamp(19px, 5.4vw, 24px);
+  font-weight: 500;
+  color: var(--gold);
+  margin-top: 18px;
+  letter-spacing: 0.01em;
+}
+
+.tagline-en {
+  font-family: var(--font-voice);
+  font-style: italic;
+  font-size: clamp(13px, 3.6vw, 15px);
+  color: var(--text-secondary);
+  margin-top: 8px;
+  letter-spacing: 0.02em;
+}
+
+.intro {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  margin-top: 26px;
+  max-width: 34ch;
+}
+.intro strong {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* CTA — 문 골드, 어두운 잉크 텍스트 */
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 36px;
+  padding: 15px 30px;
+  min-height: 44px;
+  border-radius: var(--radius-button);
+  background: var(--gold);
+  color: var(--on-accent);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  box-shadow: 0 6px 22px rgba(232, 192, 106, 0.28);
+  transition: transform var(--transition-soft),
+              box-shadow var(--transition-soft),
+              background var(--transition-soft);
+}
+.cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 28px rgba(232, 192, 106, 0.4);
+  background: #efc978;
+}
+.cta:active {
+  transform: translateY(0);
+}
+.cta__arrow {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.footnote {
+  margin-top: 22px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.02em;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .mark {
+    animation: float 6s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
   }
 }

@@ -1,0 +1,176 @@
+/* ============================================================
+   /home 오늘 화면 전용 레이아웃 (토큰 기반)
+   출처: /screens/home.html <style>
+   컴포넌트(.wl-*)는 app/wolune.css 재사용, 폭은 --content-max 반응형.
+   ============================================================ */
+
+.home {
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  min-height: 100dvh;
+  background: var(--bg-screen);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.home__scroll {
+  flex: 1;
+  padding: 20px var(--screen-padding-x) 96px;
+}
+
+/* 인사 헤더 */
+.greeting {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.greeting__hello { color: var(--text-primary); }
+.greeting__moon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--surface-gold);
+  border: var(--border-width) solid var(--border-gold);
+  color: var(--gold);
+}
+.greeting__moon svg { width: 22px; height: 22px; }
+.greeting__date { margin-top: 2px; }
+
+.home__trust { margin: 14px 0 18px; }
+
+/* 감정 날씨 카드 */
+.weather { display: flex; align-items: center; gap: 16px; margin-top: 12px; }
+.weather__icon {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: var(--surface-1b);
+  color: var(--lavender);
+}
+.weather__icon svg { width: 30px; height: 30px; }
+.weather__text { display: flex; flex-direction: column; gap: 4px; }
+.weather__title { color: var(--text-primary); }
+
+/* 운세 점수 카드 */
+.fortune { display: flex; align-items: center; gap: 16px; margin-top: 12px; }
+.fortune__body { display: flex; flex-direction: column; gap: 4px; }
+.fortune__title { color: var(--text-primary); }
+.fortune__bars { margin-top: 16px; }
+
+/* 분야별 점수 */
+.fortune-fields { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; }
+.ff-row { display: flex; flex-direction: column; gap: 6px; }
+.ff-label { display: flex; justify-content: space-between; align-items: baseline; }
+
+/* 빠른 진입 2열 */
+.section-gap { margin-top: 22px; }
+.home__quick-label { display: block; margin-bottom: 10px; }
+.quick { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.quick__card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: var(--radius-card);
+  border: var(--border-width) solid var(--border-soft);
+  background: var(--surface-1);
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  transition: border-color var(--transition-soft);
+}
+.quick__card:hover { border-color: var(--gold); }
+.quick__card--rose:hover { border-color: var(--rose); }
+.quick__card:disabled { cursor: default; opacity: 0.55; }
+.quick__card:disabled:hover { border-color: var(--border-soft); }
+.quick__icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--surface-gold);
+  color: var(--gold);
+}
+.quick__card--rose .quick__icon { background: var(--surface-rose); color: var(--rose); }
+.quick__icon svg { width: 22px; height: 22px; }
+.quick__title { font-size: var(--fs-body-l); font-weight: var(--fw-medium); color: var(--text-primary); }
+.quick__desc { font-size: var(--fs-body-s); color: var(--text-secondary); }
+
+/* 무드저널 입구 (버튼) */
+.mood-entry {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 16px;
+  border-radius: var(--radius-card);
+  border: var(--border-width) solid var(--border-soft);
+  background: var(--surface-1);
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color var(--transition-soft);
+}
+.mood-entry:hover { border-color: var(--lavender); }
+.mood-entry__icon {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--lavender);
+}
+.mood-entry__icon svg { width: 24px; height: 24px; }
+.mood-entry__text { display: flex; flex-direction: column; gap: 3px; flex: 1; }
+.mood-entry__title { font-size: var(--fs-body-l); font-weight: var(--fw-medium); color: var(--text-primary); }
+.mood-entry__desc { font-size: var(--fs-body-s); color: var(--text-secondary); }
+.mood-entry__chevron { color: var(--text-tertiary); flex-shrink: 0; }
+.mood-entry__chevron svg { width: 20px; height: 20px; display: block; }
+
+/* 하단 탭 고정 */
+.home__nav { position: sticky; bottom: 0; padding-bottom: env(safe-area-inset-bottom); }
+
+/* 로딩 / 안내 상태 */
+.home-state {
+  flex: 1;
+  min-height: 70dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+  padding: 40px var(--screen-padding-x);
+}
+.home-state__mark {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--surface-1b);
+  border: var(--border-width) solid var(--border-gold);
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+.home-state__mark svg { width: 30px; height: 30px; }
+.home-state .wl-body { max-width: 24em; }
+.home-state__cta { width: auto; margin-top: 8px; padding: 13px 26px; }

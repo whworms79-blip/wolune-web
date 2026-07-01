@@ -54,7 +54,7 @@ a {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 48px 22px calc(48px + env(safe-area-inset-bottom));
+  padding: 48px var(--screen-padding-x) calc(48px + env(safe-area-inset-bottom));
   overflow: hidden;
   text-align: center;
 }
@@ -96,7 +96,8 @@ a {
   display: flex;
   flex-direction: column;
   align-items: center;
-  max-width: 520px;
+  /* 모바일은 520px 유지, 넓은 화면에서만 --content-max(600/680)로 확장 */
+  max-width: max(520px, var(--content-max));
   width: 100%;
 }
 
@@ -135,14 +136,15 @@ a {
   letter-spacing: 0.02em;
 }
 
-.intro {
+/* 랜딩 소개 문단 — 이름 충돌 방지 위해 .hero__ 스코프(/saju의 .intro 헤더와 구분) */
+.hero__intro {
   font-size: 14px;
   line-height: 1.7;
   color: var(--text-secondary);
   margin-top: 26px;
   max-width: 34ch;
 }
-.intro strong {
+.hero__intro strong {
   color: var(--text-primary);
   font-weight: 500;
 }

@@ -65,7 +65,7 @@ export default function Home() {
         <p className="tagline">달빛처럼, 곁에서 비춰주는</p>
         <p className="tagline-en">Your gentle guide through life&rsquo;s tides</p>
 
-        <p className="intro">
+        <p className="hero__intro">
           운명을 점치지 않습니다. 어려울 때 곁에서 조용히 길을 비춰주는 동행.
           달이 어둠을 몰아내지 않고 은은히 밝히듯, <strong>Wolune</strong>은
           단정하지 않고 함께 들여다봅니다.

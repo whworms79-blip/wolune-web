@@ -6,7 +6,7 @@
 
 .screen {
   width: 100%;
-  max-width: 420px;
+  max-width: var(--content-max);
   margin: 0 auto;
   min-height: 100dvh;
   background: var(--bg-screen);
@@ -141,4 +141,75 @@
   position: sticky;
   bottom: 0;
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ----- 폴백/안내 상태 (엔진 꺼짐 · 입력 없음) ----- */
+.result-fallback {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  padding: 40px var(--screen-padding-x) 80px;
+}
+.result-fallback__mark {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--surface-1b);
+  border: var(--border-width) solid var(--border-gold);
+  color: var(--gold);
+  margin-bottom: 6px;
+}
+.result-fallback__mark svg { width: 30px; height: 30px; }
+.result-fallback .wl-body { max-width: 24em; }
+.result-fallback__cta { width: auto; margin-top: 10px; padding: 13px 26px; }
+
+/* ----- 계산 중 로딩 (loading.tsx) ----- */
+.result-loading {
+  flex: 1;
+  min-height: 70dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+  padding: 40px var(--screen-padding-x);
+}
+.loader { position: relative; width: 88px; height: 88px; display: flex; align-items: center; justify-content: center; }
+.loader__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--border-gold);
+  border-top-color: var(--gold);
+  animation: spin 1.4s linear infinite;
+}
+.loader__mark {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 40%, var(--surface-gold), var(--bg-screen));
+  box-shadow: 0 0 24px 0 rgba(232, 192, 106, 0.35);
+  animation: pulse 2.4s ease-in-out infinite;
+  color: var(--gold);
+}
+.loader__mark svg { width: 30px; height: 30px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 20px 0 rgba(232, 192, 106, 0.28); }
+  50%      { box-shadow: 0 0 32px 4px rgba(232, 192, 106, 0.45); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .loader__ring { animation-duration: 3s; }
+  .loader__mark { animation: none; }
 }

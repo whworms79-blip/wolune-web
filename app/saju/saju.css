@@ -6,7 +6,7 @@
 
 .screen {
   width: 100%;
-  max-width: 420px;
+  max-width: var(--content-max);
   margin: 0 auto;
   min-height: 100dvh;
   background: var(--bg-screen);
@@ -20,21 +20,45 @@
   padding: 40px 0 calc(24px + env(safe-area-inset-bottom));
 }
 
-/* 상단 중앙 인사 */
-.intro { text-align: center; margin-bottom: 32px; }
+/* 상단 중앙 인사 — 크고 또렷하게 */
+.intro { text-align: center; margin-bottom: 36px; }
 .intro__mark {
-  width: 56px;
-  height: 56px;
-  margin: 0 auto 18px;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
   background: var(--surface-gold);
   border: var(--border-width) solid var(--border-gold);
+  box-shadow: 0 0 24px rgba(232, 192, 106, 0.18);
 }
-.intro__title { margin-bottom: 8px; color: var(--text-primary); }
-.intro__sub { max-width: 18em; margin: 0 auto; }
+.intro__mark svg { width: 34px; height: 34px; }
+.intro__title {
+  margin-bottom: 10px;
+  color: var(--text-primary);
+  font-size: 26px;
+  line-height: 1.25;
+  font-weight: var(--fw-medium);
+  letter-spacing: -0.01em;
+}
+/* 부제: 폭 제약 없이 한 줄 · 중앙 정렬(좁은 폰에서만 자연 줄바꿈) */
+.intro__sub { max-width: none; margin: 0 auto; }
+
+/* 넓은 화면에서 헤더를 한층 더 크게 */
+@media (min-width: 768px) {
+  .intro { margin-bottom: 44px; }
+  .intro__mark {
+    width: 76px;
+    height: 76px;
+    margin-bottom: 24px;
+    box-shadow: 0 0 30px rgba(232, 192, 106, 0.22);
+  }
+  .intro__mark svg { width: 40px; height: 40px; }
+  .intro__title { font-size: 32px; margin-bottom: 12px; }
+  .intro__sub { font-size: var(--fs-body-l); }
+}
 
 /* 폼 */
 .form { display: flex; flex-direction: column; gap: 18px; }
@@ -50,6 +74,109 @@
 }
 .input-wrap__icon svg { width: 18px; height: 18px; }
 .input-wrap .wl-input { padding-left: 42px; }
+
+/* ----- 커스텀 날짜 선택기 ----- */
+.datepicker { position: relative; }
+.datepicker__trigger {
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+.datepicker__value { color: var(--text-primary); }
+
+.datepicker__pop {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 8px);
+  left: 0;
+  width: min(340px, 100%);
+  padding: 14px;
+  background: var(--surface-1);
+  border: var(--border-width) solid var(--border-soft);
+  border-radius: var(--radius-card);
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.45);
+  animation: dp-in var(--transition-slide);
+}
+@keyframes dp-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .datepicker__pop { animation: none; }
+}
+
+.datepicker__head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.datepicker__selects { display: flex; gap: 8px; flex: 1; }
+.datepicker__select {
+  flex: 1;
+  min-width: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: var(--surface-1b);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a9a7c8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  border: var(--border-width) solid var(--border-input);
+  border-radius: var(--radius-input);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  padding: 9px 30px 9px 12px;
+  cursor: pointer;
+}
+.datepicker__select:focus { outline: none; border-color: var(--gold); }
+.datepicker__nav {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 9px;
+  background: var(--surface-1b);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--transition-soft), color var(--transition-soft);
+}
+.datepicker__nav:hover { background: var(--surface-select); color: var(--text-primary); }
+.datepicker__nav svg { width: 18px; height: 18px; }
+
+.datepicker__grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.datepicker__wd {
+  text-align: center;
+  font-size: var(--fs-caption);
+  color: var(--text-tertiary);
+  padding: 4px 0 8px;
+}
+.datepicker__wd--sun { color: var(--rose); }
+.datepicker__wd--sat { color: var(--element-water); }
+
+.datepicker__day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body-s);
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background var(--transition-soft);
+}
+.datepicker__day:hover { background: var(--surface-select); }
+.datepicker__day--sun { color: var(--rose); }
+.datepicker__day--sat { color: var(--element-water); }
+.datepicker__day--selected,
+.datepicker__day--selected:hover {
+  background: var(--gold);
+  color: var(--on-accent);
+  font-weight: var(--fw-medium);
+}
+.datepicker__day--empty { visibility: hidden; }
 
 /* 시간 필드 행 + '모름' 칩 */
 .time-row { display: flex; gap: 10px; align-items: stretch; }

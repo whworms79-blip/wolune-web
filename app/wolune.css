@@ -80,6 +80,7 @@
 
   /* 레이아웃 & 스페이싱 */
   --screen-padding-x: 22px;
+  --content-max: 420px;       /* 콘텐츠 최대 폭 — 모바일 기준(넓은 화면에서만 확장) */
   --card-gap: 14px;
   --card-gap-dense: 10px;
   --card-padding: 18px;
@@ -99,6 +100,17 @@
   /* 전환 */
   --transition-soft: 200ms ease;
   --transition-slide: 280ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ---------------------------------------------------------- *
+ * 반응형 — 모바일 기준값 위에 태블릿·데스크톱에서만 폭/여백 확장.
+ * (모바일은 위 :root 기본값 그대로 유지)
+ * ---------------------------------------------------------- */
+@media (min-width: 768px) {   /* 태블릿 */
+  :root { --content-max: 600px; --screen-padding-x: 32px; }
+}
+@media (min-width: 1024px) {  /* 데스크톱 */
+  :root { --content-max: 680px; --screen-padding-x: 40px; }
 }
 
 /* ---------------------------------------------------------- *
@@ -194,6 +206,7 @@
 }
 .wl-btn:active { opacity: 0.85; }
 .wl-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.wl-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
 .wl-btn--primary { background: var(--gold); color: var(--on-accent); }
 .wl-btn--rose    { background: var(--rose); color: var(--on-rose); }
 
@@ -337,6 +350,23 @@
 /* 진행 바 */
 .wl-progress { width: 100%; height: 7px; background: var(--progress-track); border-radius: var(--radius-progress); overflow: hidden; }
 .wl-progress__fill { height: 100%; background: var(--gold); border-radius: var(--radius-progress); }
+
+/* 스코어 링 (오늘의 운세 점수) */
+.wl-score-ring {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 2px solid var(--gold);
+  color: var(--text-primary);
+}
+.wl-score-ring--rose { border-color: var(--rose); }
+.wl-score-ring__value { font-size: 22px; font-weight: var(--fw-medium); line-height: 1; }
+.wl-score-ring__label { font-size: var(--fs-micro); color: var(--text-secondary); margin-top: 2px; }
 
 /* 3.10 Character Header */
 .wl-character-header { display: flex; flex-direction: column; gap: 6px; }

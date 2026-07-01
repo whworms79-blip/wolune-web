@@ -1,0 +1,320 @@
+/* ============================================================
+   /compatibility 궁합 화면 전용 레이아웃 (토큰 기반)
+   출처: /screens/compatibility.html <style> + /saju 입력 폼 재사용.
+   컴포넌트(.wl-*)는 app/wolune.css(전역), 폭은 --content-max 반응형.
+   ============================================================ */
+
+.screen {
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  min-height: 100dvh;
+  background: var(--bg-screen);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* 상단 바 */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px var(--screen-padding-x);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--bg-screen);
+  border-bottom: var(--border-width) solid var(--border-soft);
+}
+.topbar__btn {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  background: var(--surface-1);
+  color: var(--text-primary);
+}
+.topbar__btn:disabled { opacity: 0; pointer-events: none; }
+.topbar__btn svg { width: 20px; height: 20px; }
+.topbar__title { flex: 1; color: var(--text-primary); }
+
+.screen__scroll { flex: 1; padding: 20px var(--screen-padding-x) 96px; }
+
+/* ---------- 입력 폼 ---------- */
+.compat-intro { text-align: center; margin-bottom: 22px; }
+.compat-intro__title {
+  color: var(--text-primary);
+  font-size: 22px;
+  line-height: 1.3;
+  font-weight: var(--fw-medium);
+  margin-bottom: 8px;
+}
+.compat-intro__sub { max-width: none; }
+
+.compat-form { display: flex; flex-direction: column; gap: 16px; }
+
+/* 한 사람 입력 묶음(카드) */
+.person-card { display: flex; flex-direction: column; gap: 14px; }
+.person-card__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.person-card__badge {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: var(--fs-body-s);
+  font-weight: var(--fw-medium);
+}
+.person-card--me .person-card__badge { background: var(--surface-gold); border: 1.5px solid var(--gold); color: var(--gold); }
+.person-card--you .person-card__badge { background: var(--surface-rose); border: 1.5px solid var(--rose); color: var(--rose); }
+.person-card__title { color: var(--text-primary); }
+
+.form-grid { display: flex; flex-direction: column; gap: 14px; }
+.form-row { display: flex; gap: 10px; }
+.form-row > * { flex: 1; min-width: 0; }
+
+/* 아이콘 품은 입력 필드 (from /saju) */
+.input-wrap { position: relative; display: flex; align-items: center; }
+.input-wrap__icon {
+  position: absolute;
+  left: 15px;
+  display: flex;
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+.input-wrap__icon svg { width: 18px; height: 18px; }
+.input-wrap .wl-input { padding-left: 42px; }
+
+/* 시간 필드 행 + '모름' 칩 */
+.time-row { display: flex; gap: 10px; align-items: stretch; }
+.time-row .input-wrap { flex: 1; }
+.time-row .wl-chip {
+  align-self: stretch;
+  padding: 0 16px;
+  border-radius: var(--radius-input);
+  white-space: nowrap;
+}
+
+/* 양/음력 세그먼트 · 힌트 · 윤달 (from /saju) */
+.cal-seg { margin-top: 4px; }
+.cal-hint {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  padding: 0 2px;
+  color: var(--text-tertiary);
+}
+.cal-hint svg { width: 14px; height: 14px; }
+.leap-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding: 2px 2px 0;
+}
+.leap-hint { margin-top: 2px; padding: 0 2px; }
+
+/* 두 사람 사이 구분 하트 */
+.pair-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--rose);
+  margin: 2px 0;
+}
+.pair-divider svg { width: 22px; height: 22px; }
+
+.compat-submit { margin-top: 8px; }
+.compat-submit .wl-btn svg { width: 18px; height: 18px; }
+
+/* ---------- 커스텀 날짜 선택기 (from /saju) ---------- */
+.datepicker { position: relative; }
+.datepicker__trigger { text-align: left; cursor: pointer; display: flex; align-items: center; }
+.datepicker__value { color: var(--text-primary); }
+.datepicker__pop {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 8px);
+  left: 0;
+  width: min(340px, 100%);
+  padding: 14px;
+  background: var(--surface-1);
+  border: var(--border-width) solid var(--border-soft);
+  border-radius: var(--radius-card);
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.45);
+  animation: dp-in var(--transition-slide);
+}
+@keyframes dp-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: none; }
+}
+.datepicker__head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.datepicker__selects { display: flex; gap: 8px; flex: 1; }
+.datepicker__select {
+  flex: 1;
+  min-width: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: var(--surface-1b);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a9a7c8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  border: var(--border-width) solid var(--border-input);
+  border-radius: var(--radius-input);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  padding: 9px 30px 9px 12px;
+  cursor: pointer;
+}
+.datepicker__select:focus { outline: none; border-color: var(--gold); }
+.datepicker__nav {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 9px;
+  background: var(--surface-1b);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--transition-soft), color var(--transition-soft);
+}
+.datepicker__nav:hover { background: var(--surface-select); color: var(--text-primary); }
+.datepicker__nav svg { width: 18px; height: 18px; }
+.datepicker__grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.datepicker__wd { text-align: center; font-size: var(--fs-caption); color: var(--text-tertiary); padding: 4px 0 8px; }
+.datepicker__wd--sun { color: var(--rose); }
+.datepicker__wd--sat { color: var(--element-water); }
+.datepicker__day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body-s);
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background var(--transition-soft);
+}
+.datepicker__day:hover { background: var(--surface-select); }
+.datepicker__day--sun { color: var(--rose); }
+.datepicker__day--sat { color: var(--element-water); }
+.datepicker__day--selected,
+.datepicker__day--selected:hover {
+  background: var(--gold);
+  color: var(--on-accent);
+  font-weight: var(--fw-medium);
+}
+.datepicker__day--empty { visibility: hidden; }
+
+/* ---------- 결과: 두 사람 ---------- */
+.pair {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.person { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 96px; }
+.person__avatar {
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--surface-1b);
+  font-size: var(--fs-title-l);
+  color: var(--text-primary);
+}
+.person--gold .person__avatar { border: 1.5px solid var(--gold); }
+.person--rose .person__avatar { border: 1.5px solid var(--rose); }
+.person__name { font-size: var(--fs-body-l); color: var(--text-primary); }
+.person__el { font-size: var(--fs-caption); color: var(--text-secondary); }
+.pair__heart { align-self: center; margin-top: 22px; color: var(--rose); }
+.pair__heart svg { width: 26px; height: 26px; }
+
+/* 궁합 점수 카드 */
+.score { display: flex; align-items: center; gap: 16px; }
+.score__body { display: flex; flex-direction: column; gap: 4px; }
+.score__en { color: var(--character-en); }
+
+/* 관계 해석 카드(아이콘 헤더) */
+.insight__head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.insight__icon {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+}
+.insight__icon svg { width: 19px; height: 19px; }
+.insight--good .insight__icon { background: var(--surface-1b); color: var(--element-wood); }
+.insight--tension .insight__icon { background: var(--surface-gold); color: var(--gold); }
+.insight__label--good { color: var(--element-wood); }
+.insight__label--tension { color: var(--gold); }
+
+/* ---------- 상태(로딩/오류) ---------- */
+.compat-state {
+  flex: 1;
+  min-height: 70dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+  padding: 40px var(--screen-padding-x);
+}
+.compat-state__mark {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--surface-1b);
+  border: var(--border-width) solid var(--border-rose);
+  color: var(--rose);
+  margin-bottom: 4px;
+}
+.compat-state__mark svg { width: 30px; height: 30px; }
+.compat-state .loader__ring {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid var(--border-soft);
+  border-top-color: var(--rose);
+  animation: compat-spin 0.9s linear infinite;
+  display: block;
+}
+@keyframes compat-spin { to { transform: rotate(360deg); } }
+
+/* 하단 탭 고정 */
+.home__nav { position: sticky; bottom: 0; padding-bottom: env(safe-area-inset-bottom); }
+
+@media (prefers-reduced-motion: reduce) {
+  .datepicker__pop { animation: none; }
+  .compat-state .loader__ring { animation: none; }
+}

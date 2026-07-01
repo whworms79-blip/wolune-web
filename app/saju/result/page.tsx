@@ -25,6 +25,7 @@ const LayoutGrid = () => (<svg viewBox="0 0 24 24" {...ico}><rect x="4" y="4" wi
 const Moon = () => (<svg viewBox="0 0 24 24" {...ico}><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z" /></svg>);
 const Notebook = () => (<svg viewBox="0 0 24 24" {...ico}><rect x="5" y="4" width="14" height="16" rx="2" /><path d="M9 4v16M9 9h6M9 13h4" /></svg>);
 const User = () => (<svg viewBox="0 0 24 24" {...ico}><circle cx="12" cy="8" r="4" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>);
+const Heart = () => (<svg viewBox="0 0 24 24" {...ico}><path d="M12 20s-7-4.5-9.2-9A4.5 4.5 0 0 1 12 6.5 4.5 4.5 0 0 1 21.2 11C19 15.5 12 20 12 20Z" /></svg>);
 
 const EL_HAN_CLASS: Record<string, string> = {
   wood: "wl-el-wood", fire: "wl-el-fire", earth: "wl-el-earth",
@@ -203,6 +204,11 @@ export default async function SajuResultPage({
           </section>
 
           <div className="wl-reflection">{v.reflectLuck}</div>
+
+          {/* 궁합 진입 — 결과를 나눠 사람을 데려오는 통로 */}
+          <Link className="wl-btn wl-btn--rose" href="/compatibility">
+            <Heart /> 소중한 사람과 궁합 보기
+          </Link>
         </div>
 
         {/* 4. 명식 자세히 보기 (네이티브 details) */}

@@ -280,11 +280,11 @@ export default function HomePage() {
               <span className="quick__title">내 사주</span>
               <span className="quick__desc">나의 타고난 결을 다시 보기</span>
             </Link>
-            <button className="quick__card quick__card--rose" type="button" disabled>
+            <Link className="quick__card quick__card--rose" href="/compatibility">
               <span className="quick__icon" aria-hidden="true"><Heart /></span>
               <span className="quick__title">궁합</span>
               <span className="quick__desc">소중한 사람과의 결 맞춰보기</span>
-            </button>
+            </Link>
           </div>
         </div>
       </div>

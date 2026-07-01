@@ -311,6 +311,38 @@
 }
 @keyframes compat-spin { to { transform: rotate(360deg); } }
 
+/* 결과 하단 액션 */
+.compat-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+.wl-btn--ghost {
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  border: var(--border-width) solid var(--border-soft);
+}
+.compat-trust-row { display: flex; justify-content: center; margin-top: 4px; }
+.share-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 2px;
+  color: var(--text-tertiary);
+  text-align: center;
+}
+.share-note svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+/* 공유 링크로 들어온 사람에게 보이는 전환 CTA(나도 내 사주 보기) */
+.share-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  margin-top: 8px;
+  padding: 20px 18px;
+}
+.share-cta__title { color: var(--text-primary); }
+.share-cta .wl-btn { margin-top: 10px; }
+
 /* 하단 탭 고정 */
 .home__nav { position: sticky; bottom: 0; padding-bottom: env(safe-area-inset-bottom); }
 

@@ -4,6 +4,8 @@
 //    잘 통하는 점 / 서로 배려하면 좋은 점을 따뜻한 톤으로 전한다.
 // 순수 함수(입력이 같으면 항상 같은 결과) — 서버/클라이언트 어디서든 호출 가능.
 
+import type { SajuInput } from "./sajuInput";
+
 export type ElKey = "wood" | "fire" | "earth" | "metal" | "water";
 
 // 엔진 차트에서 궁합 계산에 쓰는 최소 형태(app/saju/result/chart.ts EngineChart의 부분집합).
@@ -241,4 +243,48 @@ export function buildCompatibility(
     reflection: "최근 두 사람 사이, 가장 좋았던 순간은 언제였나요?",
     basis: { dominant: [domA, domB], tenGod: [godAB, godBA], branch: br },
   };
+}
+
+// ── 공유 링크 코덱: 한 사람(이름+사주입력) ↔ URL 파라미터 ──
+// 링크로 궁합 결과를 나누는 획득 통로. 서버(SSR 디코드)·클라이언트(생성) 양쪽에서 쓰므로
+// 어디서나 동작하는 encode/decodeURIComponent 만 사용한다.
+// ⚠ 개인정보: URL에 생일이 담긴다. 이름은 선택(닉네임/이니셜) — 사주 계산에 필요한 값만 필수.
+export interface SharePerson {
+  name: string;
+  input: SajuInput;
+}
+
+const SHARE_SEP = "~";
+
+// name~date~time~city~gender(m/f)~calendar(s/l)~leap(1/0) → encodeURIComponent
+export function encodePerson(name: string, inp: SajuInput): string {
+  const parts = [
+    (name || "").trim().slice(0, 12),
+    inp.date,
+    inp.time || "",
+    (inp.city || "").trim(),
+    inp.gender === "male" ? "m" : "f",
+    inp.calendar === "lunar" ? "l" : "s",
+    inp.is_leap_month ? "1" : "0",
+  ];
+  return encodeURIComponent(parts.join(SHARE_SEP));
+}
+
+// raw: URLSearchParams가 이미 퍼센트 디코드한 값(name~date~time~city~gender~calendar~leap).
+export function decodePerson(raw: string | undefined | null): SharePerson | null {
+  if (!raw) return null;
+  const p = raw.split(SHARE_SEP);
+  if (p.length < 7) return null;
+  const [name, date, time, city, gender, calendar, leap] = p;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null; // 최소 검증: 생년월일 형식
+  const isLunar = calendar === "l";
+  const input: SajuInput = {
+    date,
+    time: /^\d{1,2}:\d{2}$/.test(time) ? time : undefined,
+    city: city || undefined,
+    gender: gender === "m" ? "male" : "female",
+    calendar: isLunar ? "lunar" : "solar",
+    is_leap_month: isLunar && leap === "1" ? true : undefined,
+  };
+  return { name: name || "", input };
 }

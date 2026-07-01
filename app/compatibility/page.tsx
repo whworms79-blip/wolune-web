@@ -12,9 +12,11 @@ import {
 } from "../lib/sajuInput";
 import {
   buildCompatibility,
+  encodePerson,
   type CompatChart,
   type CompatView,
 } from "../lib/compatibility";
+import CompatResult from "./CompatResult";
 import "./compatibility.css";
 
 /* ---------- 시간 파싱/표시 ---------- */
@@ -126,9 +128,8 @@ const MoonIcon = () => (<svg viewBox="0 0 24 24" {...ico}><path d="M20 14.5A8 8 
 const HeartIcon = () => (<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 20s-7-4.5-9.2-9A4.5 4.5 0 0 1 12 6.5 4.5 4.5 0 0 1 21.2 11C19 15.5 12 20 12 20Z" /></svg>);
 const HeartLine = () => (<svg viewBox="0 0 24 24" {...ico}><path d="M12 20s-7-4.5-9.2-9A4.5 4.5 0 0 1 12 6.5 4.5 4.5 0 0 1 21.2 11C19 15.5 12 20 12 20Z" /></svg>);
 const ChevronLeft = () => (<svg viewBox="0 0 24 24" {...ico}><path d="M15 6l-6 6 6 6" /></svg>);
-const CircleCheck = () => (<svg viewBox="0 0 24 24" {...ico}><circle cx="12" cy="12" r="9" /><path d="M8.5 12l2.4 2.4 4.6-4.8" /></svg>);
-const Check = () => (<svg viewBox="0 0 24 24" {...ico}><path d="M5 12l5 5L20 6" /></svg>);
-const Flame = () => (<svg viewBox="0 0 24 24" {...ico}><path d="M12 3c1 3-2 4-2 7a2 2 0 0 0 4 0c0-1 0-1 .5-2 1.5 2 2.5 3.5 2.5 5.5a5 5 0 0 1-10 0C7 12 10 9 12 3Z" /></svg>);
+const ShareIcon = () => (<svg viewBox="0 0 24 24" {...ico}><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" /></svg>);
+const LinkIcon = () => (<svg viewBox="0 0 24 24" {...ico}><path d="M10 14a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1 1" /><path d="M14 10a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1-1" /></svg>);
 const Notebook = () => (<svg viewBox="0 0 24 24" {...ico}><rect x="5" y="4" width="14" height="16" rx="2" /><path d="M9 4v16M9 9h6M9 13h4" /></svg>);
 const LayoutGrid = () => (<svg viewBox="0 0 24 24" {...ico}><rect x="4" y="4" width="7" height="7" rx="1" /><rect x="13" y="4" width="7" height="7" rx="1" /><rect x="4" y="13" width="7" height="7" rx="1" /><rect x="13" y="13" width="7" height="7" rx="1" /></svg>);
 const Moon = MoonIcon;
@@ -292,7 +293,7 @@ function PersonFields({
 type Phase =
   | { status: "form" }
   | { status: "loading" }
-  | { status: "result"; view: CompatView }
+  | { status: "result"; view: CompatView; shareA: string; shareB: string }
   | { status: "error" };
 
 export default function CompatibilityPage() {
@@ -300,6 +301,7 @@ export default function CompatibilityPage() {
   const [you, setYou] = useState<PersonState>(DEFAULT_YOU);
   const [phase, setPhase] = useState<Phase>({ status: "form" });
   const [savedHref, setSavedHref] = useState("/saju");
+  const [copied, setCopied] = useState(false);
 
   // 저장된 내 사주가 있으면 '나' 자동 채움 + 사주 탭 링크 준비
   useEffect(() => {
@@ -332,13 +334,39 @@ export default function CompatibilityPage() {
         throw new Error("bad_response");
       }
       const view = buildCompatibility(ca, cb, me.name, you.name);
-      setPhase({ status: "result", view });
+      // 공유 링크용 파라미터(두 사람 입력을 URL에 담는다) — 결과 화면 공유 버튼에서 사용
+      const shareA = encodePerson(me.name, inA);
+      const shareB = encodePerson(you.name, inB);
+      setPhase({ status: "result", view, shareA, shareB });
       if (typeof window !== "undefined") window.scrollTo({ top: 0 });
     } catch {
       setPhase({ status: "error" });
     } finally {
       clearTimeout(timer);
     }
+  }
+
+  // 결과 공유: 웹 공유 API(모바일 공유 시트) 우선, 없으면 링크 복사
+  async function handleShare(shareA: string, shareB: string) {
+    if (typeof window === "undefined") return;
+    const url = `${window.location.origin}/compatibility/share?a=${shareA}&b=${shareB}`;
+    const title = "우리 둘의 궁합 — Wolune";
+    const text = "생일만으로 보는 두 사람의 결. 나도 궁금하다면?";
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text, url });
+        return;
+      } catch {
+        /* 사용자가 공유 시트를 취소 — 조용히 넘어감 */
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      /* 클립보드 불가(권한 등) — 그래도 안내는 띄운다 */
+    }
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 2000);
   }
 
   const isResult = phase.status === "result";
@@ -417,74 +445,32 @@ export default function CompatibilityPage() {
       {/* ── 결과 ── */}
       {phase.status === "result" && (
         <div className="screen__scroll">
-          <div className="pair">
-            <div className="person person--gold">
-              <span className="person__avatar" aria-hidden="true">{phase.view.a.initial}</span>
-              <span className="person__name">{phase.view.a.name}</span>
-              <span className="person__el">{phase.view.a.elLabel}</span>
-            </div>
-            <span className="pair__heart" aria-hidden="true"><HeartIcon /></span>
-            <div className="person person--rose">
-              <span className="person__avatar" aria-hidden="true">{phase.view.b.initial}</span>
-              <span className="person__name">{phase.view.b.name}</span>
-              <span className="person__el">{phase.view.b.elLabel}</span>
-            </div>
-          </div>
-
-          <div className="wl-card-list">
-            {/* 궁합 점수 */}
-            <section className="wl-card wl-card--rose" aria-labelledby="score-title">
-              <div className="score">
-                <span className="wl-score-ring wl-score-ring--rose" aria-label={`궁합 점수 ${phase.view.score}점`}>
-                  <span className="wl-score-ring__value">{phase.view.score}</span>
-                  <span className="wl-score-ring__label">궁합</span>
-                </span>
-                <div className="score__body">
-                  <span className="wl-title-m" id="score-title">{phase.view.summary.title}</span>
-                  <span className="wl-body-s wl-voice score__en">{phase.view.summary.en}</span>
-                  <span className="wl-body wl-text-secondary">{phase.view.summary.tagline}</span>
+          <CompatResult
+            view={phase.view}
+            footer={
+              <>
+                <div className="compat-actions">
+                  <button
+                    className="wl-btn wl-btn--rose"
+                    type="button"
+                    onClick={() => handleShare(phase.shareA, phase.shareB)}
+                  >
+                    <ShareIcon /> {copied ? "링크가 복사됐어요!" : "결과 공유하기"}
+                  </button>
+                  <button
+                    className="wl-btn wl-btn--ghost"
+                    type="button"
+                    onClick={() => setPhase({ status: "form" })}
+                  >
+                    <HeartLine /> 다른 사람과 다시 보기
+                  </button>
                 </div>
-              </div>
-            </section>
-
-            {/* 잘 맞는 결 */}
-            <section className="wl-card insight insight--good">
-              <div className="insight__head">
-                <span className="insight__icon" aria-hidden="true"><Check /></span>
-                <span className="wl-section-label insight__label--good">잘 맞는 결</span>
-              </div>
-              <p className="wl-body wl-text-secondary">{phase.view.good}</p>
-            </section>
-
-            {/* 다정한 긴장 */}
-            <section className="wl-card insight insight--tension">
-              <div className="insight__head">
-                <span className="insight__icon" aria-hidden="true"><Flame /></span>
-                <span className="wl-section-label insight__label--tension">다정한 긴장</span>
-              </div>
-              <p className="wl-body wl-text-secondary">{phase.view.tension}</p>
-            </section>
-
-            {/* 성찰 */}
-            <div className="wl-reflection">{phase.view.reflection}</div>
-
-            {/* 신뢰 배지 */}
-            <div style={{ display: "flex", justifyContent: "center", marginTop: 4 }}>
-              <span className="wl-trust-badge">
-                <CircleCheck /> 진태양시로 정밀 계산됨
-              </span>
-            </div>
-
-            <div className="compat-submit">
-              <button
-                className="wl-btn wl-btn--rose"
-                type="button"
-                onClick={() => setPhase({ status: "form" })}
-              >
-                <HeartLine /> 다른 사람과 다시 보기
-              </button>
-            </div>
-          </div>
+                <p className="wl-caption share-note">
+                  <LinkIcon /> 링크를 받은 친구는 가입 없이 바로 볼 수 있어요
+                </p>
+              </>
+            }
+          />
         </div>
       )}
 

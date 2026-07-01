@@ -1,7 +1,27 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import DateField, { type DateValue } from "./DateField";
+import { saveSajuInput, chartQuery, type SajuInput } from "../lib/sajuInput";
 import "./saju.css";
+
+/* ---------- 입력값 파싱 (엔진이 받는 형식으로 변환) ---------- */
+const pad = (n: number) => (n < 10 ? "0" : "") + n;
+
+// "오전 11:11" / "오후 3:30" / "23:05" → "HH:MM" (없으면 "")
+function parseTime(s: string): string {
+  s = (s || "").trim();
+  if (!s) return "";
+  const pm = /오후|pm/i.test(s);
+  const am = /오전|am/i.test(s);
+  const m = s.match(/(\d{1,2}):(\d{2})/);
+  if (!m) return "";
+  let h = parseInt(m[1], 10);
+  if (pm && h < 12) h += 12; // 오후 3시 → 15
+  if (am && h === 12) h = 0; // 오전 12시 → 00
+  return `${pad(h)}:${m[2]}`;
+}
 
 /* ---------- 인라인 아이콘(Tabler 톤, currentColor 스트로크) ---------- */
 type IconProps = { className?: string };
@@ -12,14 +32,6 @@ const ico = {
   strokeLinejoin: "round" as const,
   fill: "none",
 };
-function CalendarIcon() {
-  return (
-    <svg viewBox="0 0 24 24" {...ico}>
-      <rect x="4" y="5" width="16" height="16" rx="2" />
-      <path d="M16 3v4M8 3v4M4 11h16" />
-    </svg>
-  );
-}
 function ClockIcon() {
   return (
     <svg viewBox="0 0 24 24" {...ico}>
@@ -93,7 +105,7 @@ const SIJIN = [
 ];
 
 export default function SajuInputPage() {
-  const [birthDate, setBirthDate] = useState("1996년 3월 14일");
+  const [birth, setBirth] = useState<DateValue>({ year: 1996, month: 3, day: 14 });
   const [birthTime, setBirthTime] = useState("오전 11:11");
   const [birthPlace, setBirthPlace] = useState("서울");
   const [calendar, setCalendar] = useState<"solar" | "lunar">("solar");
@@ -101,7 +113,8 @@ export default function SajuInputPage() {
   const [unknownTime, setUnknownTime] = useState(false);
   const [leapMonth, setLeapMonth] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const router = useRouter();
 
   const isLunar = calendar === "lunar";
 
@@ -121,10 +134,24 @@ export default function SajuInputPage() {
     return () => document.removeEventListener("keydown", onKey);
   }, [modalOpen]);
 
-  // 엔진 연결은 다음 조각 — 지금은 입력만 받고 안내만 표시
+  // 입력값을 엔진 형식으로 변환 → /saju/result로 이동(결과 페이지가 서버에서 엔진 호출)
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSubmitted(true);
+    if (busy) return;
+    setBusy(true);
+
+    const time = unknownTime ? undefined : parseTime(birthTime) || undefined;
+    const input: SajuInput = {
+      date: `${birth.year}-${pad(birth.month)}-${pad(birth.day)}`,
+      time, // 모름/미입력이면 생략(엔진 기본 00:00)
+      city: birthPlace.trim() || undefined,
+      gender: gender === "남성" ? "male" : "female",
+      calendar: isLunar ? "lunar" : "solar",
+      is_leap_month: isLunar && leapMonth ? true : undefined,
+    };
+
+    saveSajuInput(input); // 홈(/home)에서 매번 재입력 없이 불러오도록 저장
+    router.push(`/saju/result?${chartQuery(input).toString()}`);
   }
 
   return (
@@ -135,7 +162,7 @@ export default function SajuInputPage() {
           <span className="intro__mark" aria-hidden="true">
             <IntroMark />
           </span>
-          <h1 className="wl-title-l intro__title">만나서 반가워요</h1>
+          <h1 className="intro__title">만나서 반가워요</h1>
           <p className="wl-body wl-text-secondary intro__sub">
             당신을 알아가기 위해, 태어난 순간을 알려주세요
           </p>
@@ -144,23 +171,8 @@ export default function SajuInputPage() {
         <form className="form" autoComplete="off" onSubmit={handleSubmit}>
           {/* 1. 생년월일 + 양/음력 + (음력 시) 윤달 */}
           <div className="wl-field">
-            <label className="wl-field__label" htmlFor="birth-date">
-              생년월일
-            </label>
-            <div className="input-wrap">
-              <span className="input-wrap__icon" aria-hidden="true">
-                <CalendarIcon />
-              </span>
-              <input
-                className="wl-input"
-                id="birth-date"
-                type="text"
-                inputMode="numeric"
-                value={birthDate}
-                onChange={(e) => setBirthDate(e.target.value)}
-                placeholder="예: 1996년 3월 14일"
-              />
-            </div>
+            <span className="wl-field__label">생년월일</span>
+            <DateField value={birth} onChange={setBirth} />
 
             <div
               className="wl-segmented cal-seg"
@@ -319,16 +331,11 @@ export default function SajuInputPage() {
             </p>
           </div>
 
-          {/* CTA (엔진 연결은 다음 조각 — 지금은 동작 안 함) */}
+          {/* CTA — 누르면 입력값으로 /saju/result 이동(서버가 엔진 호출) */}
           <div className="cta">
-            <button type="submit" className="wl-btn wl-btn--primary">
-              <MoonIcon /> 내 사주 보기
+            <button type="submit" className="wl-btn wl-btn--primary" disabled={busy}>
+              <MoonIcon /> {busy ? "계산하는 중…" : "내 사주 보기"}
             </button>
-            {submitted && (
-              <p className="cta__note wl-caption" aria-live="polite">
-                입력은 잘 받았어요. 사주 계산 엔진 연결은 다음 단계에서 준비 중이에요.
-              </p>
-            )}
           </div>
         </form>
       </div>

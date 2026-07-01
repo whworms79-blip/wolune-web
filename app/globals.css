@@ -4,43 +4,14 @@
    다크 퍼스트 · 밤 인디고 + 달빛 크림 + 은은한 골드.
    ============================================================ */
 
+/* 디자인 시스템(토큰+타이포+컴포넌트) — 반드시 최상단 @import */
+@import "./wolune.css";
+
 :root {
-  /* 배경 / 서피스 */
-  --bg-frame: #0c0d1c;
-  --bg-screen: #16172f;   /* 화면 기본 배경(밤 인디고) */
-  --bg-nav: #101127;
-  --surface-1: #1a1b33;
-  --surface-1b: #1e2040;
-  --surface-2: #262546;
-  --surface-select: #2a2740;
-
-  /* 텍스트 */
-  --text-primary: #f3ecdd;    /* 달빛 크림 */
-  --text-secondary: #a9a7c8;
-  --text-tertiary: #7e7aa0;
-
-  /* 강조 */
-  --gold: #e8c06a;            /* 주 강조 · CTA */
-  --lavender: #c9b6f0;        /* 섹션 라벨 · 성찰 */
-  --rose: #e89bb0;
-  --on-accent: #2a2310;       /* 골드 버튼 위 텍스트 */
-
-  /* 경계선 */
-  --border-soft: #2e2848;
-  --border-gold: #4a3f6b;
-
-  /* 폰트 — voice(세리프, 우아·신비) / sans(한글 가독성)
-     voice 워드마크는 next/font(Cormorant Garamond)로 로드, --font-voice-src 주입.
-     sans는 디자인 토큰대로 시스템 스택(Pretendard/Apple SD/Malgun). */
+  /* voice 세리프를 next/font(Cormorant Garamond) 변수로 사용.
+     wolune.css의 --font-voice(Georgia 스택)를 여기서 덮어쓴다. */
   --font-voice: var(--font-voice-src, Georgia), "Times New Roman",
                 "Noto Serif KR", serif;
-  --font-sans: -apple-system, BlinkMacSystemFont, "Pretendard",
-               "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic",
-               sans-serif;
-
-  /* 반경 / 전환 */
-  --radius-button: 14px;
-  --transition-soft: 200ms ease;
 }
 
 *,

@@ -1,4 +1,5 @@
 // Wolune 랜딩 — 서버 컴포넌트(SSR). "use client" 없음 → 서버에서 렌더되어 SEO에 노출된다.
+import Link from "next/link";
 
 // 밤하늘 별. 고정 좌표(결정적)라 SSR/CSR 하이드레이션이 어긋나지 않는다.
 const STARS = [
@@ -70,12 +71,12 @@ export default function Home() {
           단정하지 않고 함께 들여다봅니다.
         </p>
 
-        <a className="cta" href="/saju">
+        <Link className="cta" href="/saju">
           내 사주 보기
           <span className="cta__arrow" aria-hidden="true">
             →
           </span>
-        </a>
+        </Link>
 
         <p className="footnote">생년월일만 있으면 시작할 수 있어요</p>
       </div>

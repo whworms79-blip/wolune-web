@@ -1,0 +1,371 @@
+/* ============================================================
+   Wolune — 디자인 시스템 (tokens + base + components)
+   출처: /styles/wolune-tokens.css, wolune-base.css, wolune-components.css
+   web 앱에서 self-contained하게 쓰기 위해 이식.
+   globals.css 최상단에서 @import 한다.
+   ============================================================ */
+
+/* ---------------------------------------------------------- *
+ * 1. 토큰 (Design Tokens)
+ * ---------------------------------------------------------- */
+:root {
+  /* 배경 / 서피스 */
+  --bg-frame: #0c0d1c;
+  --bg-screen: #16172f;       /* 화면 기본 배경(밤 인디고) */
+  --bg-nav: #101127;
+  --surface-1: #1a1b33;
+  --surface-1b: #1e2040;      /* 입력 필드 */
+  --surface-2: #262546;
+  --surface-gold: #262546;
+  --surface-rose: #2d2440;
+  --surface-select: #2a2740;
+
+  /* 텍스트 */
+  --text-primary: #f3ecdd;    /* 달빛 크림 */
+  --text-secondary: #a9a7c8;
+  --text-tertiary: #7e7aa0;
+
+  /* 강조 */
+  --gold: #e8c06a;
+  --lavender: #c9b6f0;
+  --rose: #e89bb0;
+  --on-accent: #2a2310;
+  --on-rose: #2a1622;
+
+  /* 경계선 */
+  --border-soft: #2e2848;
+  --border-input: #322c50;
+  --border-nav: #262445;
+  --border-line: #34291c;
+  --border-gold: #4a3f6b;
+  --border-rose: #5a3f55;
+  --border-width: 0.5px;
+
+  /* 오행 */
+  --element-wood: #6fb98f;
+  --element-fire: #e8755b;
+  --element-earth: #d6a75c;
+  --element-metal: #bfc3d4;
+  --element-water: #6e9bc9;
+
+  /* 무드 / 배지 */
+  --mood-inactive: #5a5878;
+  --trust-text: var(--gold);
+  --trust-bg: #24220e;
+  --trust-border: #4a3f1b;
+  --reflection-bg: #1b1a30;
+  --chip-tag-bg: #22243f;
+  --progress-track: #2e2848;
+  --character-en: #d98e5c;
+
+  /* 폰트 — voice(세리프) / sans(한글 가독성)
+     voice는 globals.css에서 next/font 변수(--font-voice-src)로 덮어씀. */
+  --font-voice: Georgia, "Times New Roman", "Noto Serif KR", serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Pretendard",
+               "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+
+  /* 타이포 스케일 */
+  --fs-display: 27px;   --lh-display: 1.25;
+  --fs-title-l: 22px;   --lh-title-l: 1.3;
+  --fs-title-m: 18px;   --lh-title-m: 1.35;
+  --fs-heading: 16px;   --lh-heading: 1.4;
+  --fs-body-l: 15px;    --lh-body-l: 1.5;
+  --fs-body: 14px;      --lh-body: 1.5;
+  --fs-body-s: 13px;    --lh-body-s: 1.5;
+  --fs-label: 12px;     --lh-label: 1.4;
+  --fs-caption: 11px;   --lh-caption: 1.4;
+  --fs-micro: 10px;     --lh-micro: 1.3;
+  --fw-regular: 400;
+  --fw-medium: 500;
+
+  /* 레이아웃 & 스페이싱 */
+  --screen-padding-x: 22px;
+  --card-gap: 14px;
+  --card-gap-dense: 10px;
+  --card-padding: 18px;
+  --tap-min: 44px;
+
+  /* 반경 */
+  --radius-frame: 42px;
+  --radius-screen: 32px;
+  --radius-card: 16px;
+  --radius-button: 14px;
+  --radius-chip: 14px;
+  --radius-chip-info: 8px;
+  --radius-input: 12px;
+  --radius-badge: 10px;
+  --radius-progress: 4px;
+
+  /* 전환 */
+  --transition-soft: 200ms ease;
+  --transition-slide: 280ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ---------------------------------------------------------- *
+ * 2. 타이포 유틸리티
+ * ---------------------------------------------------------- */
+.wl-display  { font-size: var(--fs-display);  line-height: var(--lh-display);  font-weight: var(--fw-medium); }
+.wl-title-l  { font-size: var(--fs-title-l);  line-height: var(--lh-title-l);  font-weight: var(--fw-medium); }
+.wl-title-m  { font-size: var(--fs-title-m);  line-height: var(--lh-title-m);  font-weight: var(--fw-medium); }
+.wl-heading  { font-size: var(--fs-heading);  line-height: var(--lh-heading);  font-weight: var(--fw-medium); }
+.wl-body-l   { font-size: var(--fs-body-l);   line-height: var(--lh-body-l);   font-weight: var(--fw-regular); }
+.wl-body     { font-size: var(--fs-body);     line-height: var(--lh-body);     font-weight: var(--fw-regular); }
+.wl-body-s   { font-size: var(--fs-body-s);   line-height: var(--lh-body-s);   font-weight: var(--fw-regular); }
+.wl-label    { font-size: var(--fs-label);    line-height: var(--lh-label);    font-weight: var(--fw-regular); }
+.wl-caption  { font-size: var(--fs-caption);  line-height: var(--lh-caption);  font-weight: var(--fw-regular); }
+.wl-micro    { font-size: var(--fs-micro);    line-height: var(--lh-micro);    font-weight: var(--fw-regular); }
+
+.wl-voice { font-family: var(--font-voice); }
+
+.wl-text-primary   { color: var(--text-primary); }
+.wl-text-secondary { color: var(--text-secondary); }
+.wl-text-tertiary  { color: var(--text-tertiary); }
+.wl-text-gold      { color: var(--gold); }
+.wl-text-lavender  { color: var(--lavender); }
+.wl-text-rose      { color: var(--rose); }
+
+/* 오행 색 유틸 (색에만 의존 금지 — 항상 텍스트 라벨 병기) */
+.wl-el-wood  { color: var(--element-wood); }
+.wl-el-fire  { color: var(--element-fire); }
+.wl-el-earth { color: var(--element-earth); }
+.wl-el-metal { color: var(--element-metal); }
+.wl-el-water { color: var(--element-water); }
+
+.wl-section-label {
+  font-size: var(--fs-label);
+  line-height: var(--lh-label);
+  font-weight: var(--fw-medium);
+  color: var(--lavender);
+  letter-spacing: 0.02em;
+}
+
+/* 부드러운 전환만 허용 — 급격한 모션 금지(달밤의 차분함) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------------------------------------------------------- *
+ * 3. 컴포넌트
+ * ---------------------------------------------------------- */
+
+/* 3.1 Chip */
+.wl-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: var(--radius-chip);
+  font-size: var(--fs-body-s);
+  line-height: 1;
+  background: var(--chip-tag-bg);
+  color: var(--text-secondary);
+  border: none;
+  cursor: pointer;
+  transition: background var(--transition-soft), color var(--transition-soft);
+}
+.wl-chip--selected,
+.wl-chip[aria-pressed="true"] {
+  background: var(--lavender);
+  color: var(--on-accent);
+}
+.wl-chip--selected-gold { background: var(--gold); color: var(--on-accent); }
+
+/* 3.2 Button */
+.wl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: var(--tap-min);
+  padding: 14px 15px;
+  border-radius: var(--radius-button);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body-l);
+  font-weight: var(--fw-medium);
+  border: none;
+  cursor: pointer;
+  transition: opacity var(--transition-soft), background var(--transition-soft);
+}
+.wl-btn:active { opacity: 0.85; }
+.wl-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.wl-btn--primary { background: var(--gold); color: var(--on-accent); }
+.wl-btn--rose    { background: var(--rose); color: var(--on-rose); }
+
+/* 3.3 Input Field */
+.wl-field { display: flex; flex-direction: column; gap: 6px; }
+.wl-field__label {
+  font-size: var(--fs-label);
+  color: var(--lavender);
+}
+.wl-input {
+  width: 100%;
+  background: var(--surface-1b);
+  border: var(--border-width) solid var(--border-input);
+  border-radius: var(--radius-input);
+  padding: 13px 15px;
+  font-family: var(--font-sans);
+  font-size: var(--fs-body-l);
+  color: var(--text-primary);
+}
+.wl-input::placeholder { color: var(--text-tertiary); }
+.wl-input:focus { outline: none; border-color: var(--gold); }
+.wl-input:disabled { opacity: 0.5; }
+
+/* 3.4 Segmented (성별 · 양음력) */
+.wl-segmented { display: flex; gap: 8px; }
+.wl-segmented__item {
+  flex: 1;
+  min-height: var(--tap-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-1b);
+  border: 1px solid transparent;
+  border-radius: var(--radius-input);
+  color: var(--text-tertiary);
+  font-size: var(--fs-body-l);
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: background var(--transition-soft), color var(--transition-soft), border-color var(--transition-soft);
+}
+.wl-segmented__item--selected,
+.wl-segmented__item[aria-pressed="true"] {
+  background: var(--surface-select);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* 3.5 Toggle Switch */
+.wl-toggle {
+  width: 46px;
+  height: 28px;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  border-radius: 14px;
+  background: var(--surface-select);
+  position: relative;
+  cursor: pointer;
+  transition: background var(--transition-soft);
+}
+.wl-toggle::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+  transition: transform var(--transition-soft), background var(--transition-soft);
+}
+.wl-toggle[aria-checked="true"] { background: var(--gold); }
+.wl-toggle[aria-checked="true"]::after {
+  transform: translateX(18px);
+  background: var(--on-accent);
+}
+.wl-toggle:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* 3.6 Card */
+.wl-card {
+  background: var(--surface-1);
+  border: var(--border-width) solid var(--border-soft);
+  border-radius: var(--radius-card);
+  padding: var(--card-padding);
+}
+.wl-card--gold { background: var(--surface-gold); border-color: var(--border-gold); }
+.wl-card--rose { background: var(--surface-rose); border-color: var(--border-rose); }
+.wl-card--lavender { background: var(--surface-2); border-color: var(--border-soft); }
+.wl-card--lavender.wl-card--accent { border-left: 2px solid var(--lavender); }
+.wl-card-list { display: flex; flex-direction: column; gap: var(--card-gap); }
+.wl-card-list--dense { gap: var(--card-gap-dense); }
+
+/* 정보 칩(신살) */
+.wl-chip--info {
+  background: var(--surface-1b);
+  color: var(--text-primary);
+  border-radius: var(--radius-chip-info);
+  padding: 4px 10px;
+  cursor: default;
+}
+
+/* 3.7 Reflection Inset (성찰 인셋) */
+.wl-reflection {
+  background: var(--reflection-bg);
+  border-left: 2px solid var(--lavender);
+  padding: 12px 16px;
+  font-size: var(--fs-body-s);
+  line-height: 1.5;
+  color: var(--text-secondary);
+  border-radius: 0 8px 8px 0;
+}
+.wl-reflection--feedback { border-left-color: var(--gold); }
+
+/* 3.8 Trust Badge */
+.wl-trust-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: var(--radius-badge);
+  background: var(--trust-bg);
+  border: var(--border-width) solid var(--trust-border);
+  color: var(--trust-text);
+  font-size: var(--fs-caption);
+  line-height: 1;
+}
+.wl-trust-badge svg { width: 13px; height: 13px; }
+
+/* 3.9 데이터 비주얼 — 오행 막대 */
+.wl-element-bars { display: flex; align-items: flex-end; gap: 10px; }
+.wl-element-bar { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.wl-element-bar__fill { width: 14px; border-radius: 4px 4px 0 0; background: var(--text-tertiary); }
+.wl-element-bar__fill--wood  { background: var(--element-wood); }
+.wl-element-bar__fill--fire  { background: var(--element-fire); }
+.wl-element-bar__fill--earth { background: var(--element-earth); }
+.wl-element-bar__fill--metal { background: var(--element-metal); }
+.wl-element-bar__fill--water { background: var(--element-water); }
+.wl-element-bar__label { font-size: var(--fs-label); color: var(--text-secondary); }
+.wl-element-bar--strong .wl-element-bar__label { color: var(--text-primary); }
+
+/* 진행 바 */
+.wl-progress { width: 100%; height: 7px; background: var(--progress-track); border-radius: var(--radius-progress); overflow: hidden; }
+.wl-progress__fill { height: 100%; background: var(--gold); border-radius: var(--radius-progress); }
+
+/* 3.10 Character Header */
+.wl-character-header { display: flex; flex-direction: column; gap: 6px; }
+.wl-character-header__kicker { font-size: var(--fs-label); color: var(--lavender); }
+.wl-character-header__name   { font-size: var(--fs-title-l); font-weight: var(--fw-medium); color: var(--text-primary); }
+.wl-character-header__en     { font-family: var(--font-voice); color: var(--character-en); }
+.wl-character-header__desc   { font-size: var(--fs-body); color: var(--text-secondary); }
+.wl-character-header__chips  { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+
+/* 3.11 Bottom Nav (4탭) */
+.wl-bottom-nav {
+  display: flex;
+  background: var(--bg-nav);
+  border-top: var(--border-width) solid var(--border-nav);
+  padding: 11px 8px 15px;
+}
+.wl-bottom-nav__tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-height: var(--tap-min);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  transition: color var(--transition-soft);
+}
+.wl-bottom-nav__tab svg { width: 21px; height: 21px; }
+.wl-bottom-nav__tab span { font-size: var(--fs-micro); }
+.wl-bottom-nav__tab--active { color: var(--gold); }

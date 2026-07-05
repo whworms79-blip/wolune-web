@@ -12,15 +12,19 @@ export interface SajuInput {
 
 export const SAJU_STORAGE_KEY = "wolune_saju_input";
 
-// 로컬 엔진(개발). 배포 시 NEXT_PUBLIC_WOLUNE_ENGINE_URL로 덮어씀.
-export const ENGINE_URL =
-  process.env.NEXT_PUBLIC_WOLUNE_ENGINE_URL || "http://127.0.0.1:8000";
-
 export function saveSajuInput(input: SajuInput): void {
   try {
     localStorage.setItem(SAJU_STORAGE_KEY, JSON.stringify(input));
   } catch {
     /* 저장 불가(프라이빗 모드 등) — 무시 */
+  }
+}
+
+export function clearSajuInput(): void {
+  try {
+    localStorage.removeItem(SAJU_STORAGE_KEY);
+  } catch {
+    /* 삭제 불가 — 무시 */
   }
 }
 
@@ -53,7 +57,8 @@ export function chartQuery(
   return p;
 }
 
-// 엔진 API 전체 URL (브라우저에서 직접 호출 — 엔진 CORS 열려 있음)
+// 엔진 API URL — 같은 오리진 서버 프록시(/api/engine/chart)를 거친다.
+// 엔진 실주소는 서버(route.ts)의 WOLUNE_ENGINE_URL 에만 있고 브라우저 번들엔 노출되지 않는다.
 export function chartUrl(input: SajuInput, extra?: Record<string, string>): string {
-  return `${ENGINE_URL}/v1/chart?${chartQuery(input, extra).toString()}`;
+  return `/api/engine/chart?${chartQuery(input, extra).toString()}`;
 }

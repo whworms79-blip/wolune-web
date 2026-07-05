@@ -1,6 +1,8 @@
 // 무드저널 저장/불러오기 — 지금은 localStorage, 나중에 백엔드로 교체 쉽게 헬퍼로 분리.
 // 백엔드 전환 시: 이 파일의 read/write만 API 호출로 바꾸면 됨(함수 시그니처 유지, 필요 시 async 화).
 
+import { pad } from "./time";
+
 // 기록 시점의 그날 사주 흐름 스냅샷 (mood × 사주 연결)
 export interface MoodFortune {
   score: number;
@@ -54,6 +56,15 @@ export function deleteMoodEntry(date: string): void {
   writeStore(store);
 }
 
+// 모든 무드 기록 삭제(데이터 초기화용)
+export function clearMoodJournal(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    /* 삭제 불가 — 무시 */
+  }
+}
+
 // 최신순(날짜 내림차순)
 export function listMoodEntries(): MoodEntry[] {
   return Object.values(readStore()).sort((a, b) => (a.date < b.date ? 1 : -1));
@@ -77,5 +88,3 @@ export function moodStreak(today: string): number {
   }
   return count;
 }
-
-const pad = (n: number) => (n < 10 ? "0" : "") + n;

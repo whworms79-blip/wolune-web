@@ -10,6 +10,7 @@ import {
   moodStreak,
   type MoodEntry,
 } from "../lib/moodJournal";
+import { pad } from "../lib/time";
 import "./journal.css";
 
 /* ---------- 아이콘 ---------- */
@@ -49,7 +50,6 @@ const MOOD_COLOR = ["#6e9bc9", "#8a86c4", "#c9b6f0", "#6fb98f", "#e8c06a"];
 const EMOTION_TAGS = ["평온", "설렘", "불안", "지침", "감사", "피곤", "외로움", "벅참"];
 const WEEKDAY = ["일", "월", "화", "수", "목", "금", "토"];
 const WEEK_LABELS = ["월", "화", "수", "목", "금", "토", "일"];
-const pad = (n: number) => (n < 10 ? "0" : "") + n;
 
 interface Chart {
   daily_fortune?: {
@@ -387,7 +387,7 @@ export default function JournalPage() {
           <Notebook /><span>기록</span>
         </button>
         <Link className="wl-bottom-nav__tab" href={resultHref}><LayoutGrid /><span>사주</span></Link>
-        <button className="wl-bottom-nav__tab" type="button" disabled><User /><span>마이</span></button>
+        <Link className="wl-bottom-nav__tab" href="/my"><User /><span>마이</span></Link>
       </nav>
     </main>
   );

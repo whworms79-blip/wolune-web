@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond } from "next/font/google";
+import { SITE_URL } from "./lib/site";
 import "./globals.css";
 
 // voice 폰트 — 워드마크·태그라인용 세리프(우아·신비). CSS 변수로 주입.
@@ -12,7 +13,7 @@ const voice = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://wolune.app"),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Wolune — 달빛처럼, 곁에서 비춰주는 사주",
     template: "%s · Wolune",

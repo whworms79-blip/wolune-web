@@ -7,9 +7,9 @@ import Link from "next/link";
 import { decodePerson, buildCompatibility } from "../../lib/compatibility";
 import { fetchChartServer } from "../fetchChart";
 import CompatResult from "../CompatResult";
+// 공유 프리뷰(OG)용 사이트 절대 URL(크롤러는 절대 URL만 인식). 루트 레이아웃과 같은 단일 소스.
+import { SITE_URL as SITE } from "../../lib/site";
 import "../compatibility.css";
-
-const SITE = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
 type SearchParams = Promise<{ a?: string; b?: string }>;
 
@@ -43,7 +43,8 @@ export async function generateMetadata({
 
   const enc = (s?: string) => encodeURIComponent(s || "");
   const q = `a=${enc(sp.a)}&b=${enc(sp.b)}`;
-  const ogImage = `/compatibility/share/og?${q}`;
+  // 절대 URL로 고정 — metadataBase 미설정/오설정에 관계없이 크롤러가 이미지를 찾도록.
+  const ogImage = `${SITE}/compatibility/share/og?${q}`;
 
   return {
     metadataBase: new URL(SITE),
@@ -79,7 +80,7 @@ function Screen({ children }: { children: React.ReactNode }) {
         <Link className="wl-bottom-nav__tab" href="/home"><Moon /><span>오늘</span></Link>
         <Link className="wl-bottom-nav__tab" href="/journal"><Notebook /><span>기록</span></Link>
         <Link className="wl-bottom-nav__tab" href="/saju"><LayoutGrid /><span>사주</span></Link>
-        <button className="wl-bottom-nav__tab" type="button" disabled><User /><span>마이</span></button>
+        <Link className="wl-bottom-nav__tab" href="/my"><User /><span>마이</span></Link>
       </nav>
     </main>
   );

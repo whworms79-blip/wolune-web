@@ -313,11 +313,6 @@
 
 /* 결과 하단 액션 */
 .compat-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
-.wl-btn--ghost {
-  background: var(--surface-1);
-  color: var(--text-secondary);
-  border: var(--border-width) solid var(--border-soft);
-}
 .compat-trust-row { display: flex; justify-content: center; margin-top: 4px; }
 .share-note {
   display: flex;

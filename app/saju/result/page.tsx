@@ -2,7 +2,8 @@
 // searchParams(입력값)로 서버에서 엔진(engine/server.py)을 호출 → 실제 사주로 렌더.
 // 엔진이 꺼져 있으면 에러 없이 안내 화면으로 폴백.
 import Link from "next/link";
-import { buildView, type EngineChart } from "./chart";
+import { buildView, isCompleteChart, type EngineChart } from "./chart";
+import { GlossaryText, GlossaryTerm } from "./Glossary";
 import "./result.css";
 
 // 엔진 주소(기본 로컬). 서버→엔진 호출이라 CORS 무관.
@@ -61,8 +62,8 @@ async function fetchChart(sp: Record<string, string | string[] | undefined>): Pr
       signal: controller.signal,
     });
     if (!res.ok) return { ok: false, reason: "bad_response" };
-    const chart = (await res.json()) as EngineChart;
-    if (!chart.character || !chart.pillars || !chart.five_elements) {
+    const chart = (await res.json()) as unknown;
+    if (!isCompleteChart(chart)) {
       return { ok: false, reason: "bad_response" };
     }
     return { ok: true, chart };
@@ -146,12 +147,17 @@ export default async function SajuResultPage({
               <span className="wl-character-header__desc">{v.character.desc}</span>
               <div className="wl-character-header__chips">
                 {v.character.shensha.map((s) => (
-                  <span key={s} className="wl-chip wl-chip--info">{s}</span>
+                  <GlossaryTerm key={s} term={s} triggerClassName="wl-chip wl-chip--info" />
                 ))}
               </div>
             </div>
             <span className="wl-trust-badge">
-              <CircleCheck /> {v.trueSolar ? "진태양시로 정밀 계산됨" : "표준시 기준 계산됨"}
+              <CircleCheck />{" "}
+              {v.trueSolar ? (
+                <><GlossaryTerm term="진태양시" />로 정밀 계산됨</>
+              ) : (
+                "표준시 기준 계산됨"
+              )}
             </span>
           </section>
 
@@ -189,7 +195,9 @@ export default async function SajuResultPage({
               <span className="wl-title-m">{v.yearFlow.title}</span>
               <span className="yearflow__period">{v.yearFlow.period}</span>
             </div>
-            <p className="wl-body wl-text-secondary" style={{ marginTop: 8 }}>{v.yearFlow.desc}</p>
+            <p className="wl-body wl-text-secondary" style={{ marginTop: 8 }}>
+              <GlossaryText text={v.yearFlow.desc} />
+            </p>
             {v.yearFlow.tracks.map((t) => (
               <div className="yearflow__line" key={t.label}>
                 <div className="yearflow__track-label">
@@ -234,7 +242,7 @@ export default async function SajuResultPage({
                 </div>
               ))}
             </div>
-            <p className="meongsik__note">{v.meongsikNote}</p>
+            <p className="meongsik__note"><GlossaryText text={v.meongsikNote} /></p>
           </div>
         </details>
       </div>
@@ -246,7 +254,7 @@ export default async function SajuResultPage({
         <button className="wl-bottom-nav__tab wl-bottom-nav__tab--active" type="button" aria-current="page">
           <LayoutGrid /><span>사주</span>
         </button>
-        <button className="wl-bottom-nav__tab" type="button" disabled><User /><span>마이</span></button>
+        <Link className="wl-bottom-nav__tab" href="/my"><User /><span>마이</span></Link>
       </nav>
     </Screen>
   );

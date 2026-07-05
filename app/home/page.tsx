@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { loadSajuInput, chartUrl, chartQuery, type SajuInput } from "../lib/sajuInput";
+import { pad } from "../lib/time";
 import "./home.css";
 
 /* ---------- 인라인 아이콘 ---------- */
@@ -29,7 +30,6 @@ const EL_KO: Record<string, string> = { wood: "목", fire: "화", earth: "토", 
 const FIELD_KO: Record<string, string> = { wealth: "재물", love: "애정", health: "건강", growth: "성장" };
 const FIELD_ORDER = ["wealth", "love", "health", "growth"] as const;
 const WEEKDAY = ["일", "월", "화", "수", "목", "금", "토"];
-const pad = (n: number) => (n < 10 ? "0" : "") + n;
 
 interface Chart {
   five_elements?: Record<string, { pct: number }>;
@@ -300,9 +300,9 @@ export default function HomePage() {
         <Link className="wl-bottom-nav__tab" href={resultHref}>
           <LayoutGrid /><span>사주</span>
         </Link>
-        <button className="wl-bottom-nav__tab" type="button" disabled>
+        <Link className="wl-bottom-nav__tab" href="/my">
           <User /><span>마이</span>
-        </button>
+        </Link>
       </nav>
     </main>
   );

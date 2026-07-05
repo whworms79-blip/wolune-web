@@ -45,6 +45,7 @@
 
 .screen__scroll {
   flex: 1;
+  overflow-x: clip; /* 용어 툴팁이 가로로 넘쳐도 페이지 가로 스크롤이 생기지 않도록 */
   padding: 18px var(--screen-padding-x) 96px;
 }
 
@@ -213,3 +214,58 @@
   .loader__ring { animation-duration: 3s; }
   .loader__mark { animation: none; }
 }
+
+/* ── 용어 툴팁(사주 전문용어 → 한 줄 설명, 탭 토글) ── */
+.gloss { position: relative; display: inline; }
+
+/* 본문 인라인 용어: 점선 밑줄 + ⓘ */
+.gloss__term {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  vertical-align: baseline;
+  border-bottom: 1px dotted var(--gold);
+}
+.gloss__mark {
+  font-size: 0.72em;
+  color: var(--gold);
+  margin-left: 1px;
+  vertical-align: 0.18em;
+}
+/* 칩(신살 태그)을 트리거로 쓸 때: 기존 칩 스타일 유지, 커서/정렬만 */
+.gloss__trigger {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+/* 팝오버 카드 */
+.gloss__pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  width: max-content;
+  max-width: min(260px, 72vw);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-gold);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  text-align: left;
+  white-space: normal;
+  cursor: default;
+}
+.gloss__pop-title { font-size: 13px; font-weight: 600; color: var(--gold); }
+.gloss__hanja { margin-left: 5px; font-weight: 400; font-size: 12px; color: var(--text-tertiary); }
+.gloss__pop-body { font-size: 13px; line-height: 1.5; color: var(--text-secondary); }

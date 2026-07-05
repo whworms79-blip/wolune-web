@@ -36,15 +36,17 @@ const STEM_EL: Record<string, ElKey> = {
 const YANG_STEM = new Set(["甲", "丙", "戊", "庚", "壬"]);
 
 // ── 오행 분포에서 가장 강한/옅은 오행 ──
+// best/least 를 null 로 시작해 첫 유효 원소부터 비교 — 특정 오행이 빠져 있어도
+// fe[ORDER[0]] 를 맹목적으로 역참조하다 터지지 않는다(부분 응답 방어).
 function dominant(fe: Record<ElKey, { pct: number }>): ElKey {
-  let best: ElKey = ORDER[0];
-  for (const k of ORDER) if (fe[k] && fe[k].pct > fe[best].pct) best = k;
-  return best;
+  let best: ElKey | null = null;
+  for (const k of ORDER) if (fe[k] && (best === null || fe[k].pct > fe[best].pct)) best = k;
+  return best ?? ORDER[0];
 }
 function weakest(fe: Record<ElKey, { pct: number }>): ElKey {
-  let least: ElKey = ORDER[0];
-  for (const k of ORDER) if (fe[k] && fe[k].pct < fe[least].pct) least = k;
-  return least;
+  let least: ElKey | null = null;
+  for (const k of ORDER) if (fe[k] && (least === null || fe[k].pct < fe[least].pct)) least = k;
+  return least ?? ORDER[0];
 }
 
 // ── 십성(十神): 기준 일간(me) 대비 상대 일간(other)의 관계 ──

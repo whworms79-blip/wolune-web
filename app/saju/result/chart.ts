@@ -20,6 +20,8 @@ interface AnnualPillar {
   stem: string;
   branch: string;
   stem_ten_god?: string;
+  fields?: Record<string, number>; // 세운 분야별 점수(재물·애정·건강·성장), 0~100
+  matched_field?: string;
 }
 export interface EngineChart {
   input?: { birth_datetime_local?: string };
@@ -66,6 +68,15 @@ const EL_HANJA: Record<ElKey, string> = { wood: "木", fire: "火", earth: "土"
 const YANG_STEM = "甲丙戊庚壬";
 const YANG_BRANCH = "子寅辰午申戌";
 const ORDER: ElKey[] = ["wood", "fire", "earth", "metal", "water"];
+
+// 세운 분야별 점수 → "올해의 흐름" 막대 라벨. 홈의 오늘 분야(재물/애정/건강/성장)와 같은 4개 축.
+const FIELD_ORDER = ["wealth", "love", "health", "growth"] as const;
+const FIELD_FLOW_KO: Record<string, string> = {
+  wealth: "재물·현실의 흐름",
+  love: "관계·애정의 흐름",
+  health: "건강·표현의 흐름",
+  growth: "성장·자기의 흐름",
+};
 
 const STEM_KO: Record<string, string> = {
   "甲": "갑", "乙": "을", "丙": "병", "丁": "정", "戊": "무",
@@ -193,6 +204,23 @@ function currentLuck(chart: EngineChart): LuckPillar | null {
   return cur;
 }
 
+// 엔진 200 응답이 화면이 기대하는 전체 형태(캐릭터·4기둥·오행 5종)를 갖췄는지 검증.
+// buildView 는 이 형태를 전제로 non-null 접근하므로, 부분/변형 응답은 여기서 걸러
+// 호출부가 준비해 둔 폴백 화면으로 보낸다(렌더 중 throw → 에러 바운더리 방지).
+export function isCompleteChart(c: unknown): c is EngineChart {
+  const chart = c as EngineChart | null;
+  if (!chart || !chart.character || !chart.pillars || !chart.five_elements) return false;
+  for (const k of ["year", "month", "day", "hour"] as const) {
+    const p = chart.pillars[k];
+    if (!p || typeof p.stem !== "string" || typeof p.branch !== "string") return false;
+  }
+  for (const k of ORDER) {
+    const e = chart.five_elements[k];
+    if (!e || typeof e.pct !== "number") return false;
+  }
+  return true;
+}
+
 // ── 메인: 엔진 JSON → 뷰모델 ──
 export function buildView(chart: EngineChart): ResultView {
   const character = chart.character!;
@@ -277,6 +305,14 @@ export function buildView(chart: EngineChart): ResultView {
     }
   }
 
+  // 올해의 흐름 — 분야별 점수(엔진 세운 fields). 강한 순으로 정렬해 표시.
+  // 엔진이 fields를 주지 않는 경우(구버전/부분응답)엔 빈 배열 → 막대 없이 설명만 노출.
+  const yfTracks = sy?.fields
+    ? FIELD_ORDER.map((k) => ({ label: FIELD_FLOW_KO[k], pct: sy.fields![k] ?? 50 })).sort(
+        (a, b) => b.pct - a.pct,
+      )
+    : [];
+
   // 명식 8자 (시주·일주·월주·연주)
   const yang = (han: string) => ((YANG_STEM + YANG_BRANCH).indexOf(han) !== -1 ? "양" : "음");
   const cell = (han: string, el: ElKey) => ({ han, el, label: `${EL_KO[el]} · ${yang(han)}` });
@@ -314,11 +350,7 @@ export function buildView(chart: EngineChart): ResultView {
       title: yfTitle,
       period: yfPeriod,
       desc: yfDesc,
-      // 분야별 점수는 엔진 미구현 — 데모 자리표시 유지
-      tracks: [
-        { label: "관계가 깊어지는 흐름", pct: 66 },
-        { label: "새로 시작하기 좋은 흐름", pct: 42 },
-      ],
+      tracks: yfTracks,
     },
     pillars: pillarCols,
     meongsikNote,

@@ -17,35 +17,9 @@ import {
   type CompatView,
 } from "../lib/compatibility";
 import CompatResult from "./CompatResult";
+import { pad, parseTime, to12h } from "../lib/time";
+import { CITIES } from "../lib/cities";
 import "./compatibility.css";
-
-/* ---------- 시간 파싱/표시 ---------- */
-const pad = (n: number) => (n < 10 ? "0" : "") + n;
-
-// "오전 11:11" / "오후 3:30" / "23:05" → "HH:MM" (없으면 "")
-function parseTime(s: string): string {
-  s = (s || "").trim();
-  if (!s) return "";
-  const pm = /오후|pm/i.test(s);
-  const am = /오전|am/i.test(s);
-  const m = s.match(/(\d{1,2}):(\d{2})/);
-  if (!m) return "";
-  let h = parseInt(m[1], 10);
-  if (pm && h < 12) h += 12;
-  if (am && h === 12) h = 0;
-  return `${pad(h)}:${m[2]}`;
-}
-
-// "23:05" → "오후 11:05" (저장된 24시간 표기를 폼 표시용으로)
-function to12h(hhmm: string): string {
-  const m = (hhmm || "").match(/^(\d{1,2}):(\d{2})/);
-  if (!m) return "";
-  const h = parseInt(m[1], 10);
-  const ap = h < 12 ? "오전" : "오후";
-  let h12 = h % 12;
-  if (h12 === 0) h12 = 12;
-  return `${ap} ${h12}:${m[2]}`;
-}
 
 /* ---------- 사람 입력 상태 ---------- */
 interface PersonState {
@@ -106,12 +80,6 @@ function toInput(p: PersonState): SajuInput {
     is_leap_month: isLunar && p.leap ? true : undefined,
   };
 }
-
-const CITIES = [
-  "서울", "부산", "대구", "인천", "광주", "대전", "울산", "세종", "수원",
-  "춘천", "강릉", "원주", "청주", "천안", "전주", "목포", "여수", "포항",
-  "경주", "창원", "진주", "제주", "서귀포",
-];
 
 /* ---------- 인라인 아이콘 ---------- */
 const ico = {
@@ -479,7 +447,7 @@ export default function CompatibilityPage() {
         <Link className="wl-bottom-nav__tab" href="/home"><Moon /><span>오늘</span></Link>
         <Link className="wl-bottom-nav__tab" href="/journal"><Notebook /><span>기록</span></Link>
         <Link className="wl-bottom-nav__tab" href={savedHref}><LayoutGrid /><span>사주</span></Link>
-        <button className="wl-bottom-nav__tab" type="button" disabled><UserIcon /><span>마이</span></button>
+        <Link className="wl-bottom-nav__tab" href="/my"><UserIcon /><span>마이</span></Link>
       </nav>
     </main>
   );

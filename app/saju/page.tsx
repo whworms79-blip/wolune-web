@@ -4,24 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import DateField, { type DateValue } from "./DateField";
 import { saveSajuInput, chartQuery, type SajuInput } from "../lib/sajuInput";
+import { pad, parseTime } from "../lib/time";
+import { CITIES } from "../lib/cities";
 import "./saju.css";
-
-/* ---------- 입력값 파싱 (엔진이 받는 형식으로 변환) ---------- */
-const pad = (n: number) => (n < 10 ? "0" : "") + n;
-
-// "오전 11:11" / "오후 3:30" / "23:05" → "HH:MM" (없으면 "")
-function parseTime(s: string): string {
-  s = (s || "").trim();
-  if (!s) return "";
-  const pm = /오후|pm/i.test(s);
-  const am = /오전|am/i.test(s);
-  const m = s.match(/(\d{1,2}):(\d{2})/);
-  if (!m) return "";
-  let h = parseInt(m[1], 10);
-  if (pm && h < 12) h += 12; // 오후 3시 → 15
-  if (am && h === 12) h = 0; // 오전 12시 → 00
-  return `${pad(h)}:${m[2]}`;
-}
 
 /* ---------- 인라인 아이콘(Tabler 톤, currentColor 스트로크) ---------- */
 type IconProps = { className?: string };
@@ -89,12 +74,6 @@ function IntroMark() {
   );
 }
 
-const CITIES = [
-  "서울", "부산", "대구", "인천", "광주", "대전", "울산", "세종", "수원",
-  "춘천", "강릉", "원주", "청주", "천안", "전주", "목포", "여수", "포항",
-  "경주", "창원", "진주", "제주", "서귀포",
-];
-
 const SIJIN = [
   ["자시", "23:30~01:30"], ["축시", "01:30~03:30"],
   ["인시", "03:30~05:30"], ["묘시", "05:30~07:30"],
@@ -106,6 +85,10 @@ const SIJIN = [
 
 export default function SajuInputPage() {
   const [birth, setBirth] = useState<DateValue>({ year: 1996, month: 3, day: 14 });
+  // 위 생년월일은 예시(placeholder)일 뿐 — 사용자가 달력에서 실제로 고르기 전엔 제출을 막아
+  // 남의 생일이 조용히 내 사주로 저장·전파되는 것을 방지한다.
+  const [dateChosen, setDateChosen] = useState(false);
+  const [showDateHint, setShowDateHint] = useState(false);
   const [birthTime, setBirthTime] = useState("오전 11:11");
   const [birthPlace, setBirthPlace] = useState("서울");
   const [calendar, setCalendar] = useState<"solar" | "lunar">("solar");
@@ -138,6 +121,11 @@ export default function SajuInputPage() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
+    // 생년월일을 실제로 고르지 않았으면 제출 차단(예시값이 그대로 저장되는 것을 방지)
+    if (!dateChosen) {
+      setShowDateHint(true);
+      return;
+    }
     setBusy(true);
 
     const time = unknownTime ? undefined : parseTime(birthTime) || undefined;
@@ -172,7 +160,14 @@ export default function SajuInputPage() {
           {/* 1. 생년월일 + 양/음력 + (음력 시) 윤달 */}
           <div className="wl-field">
             <span className="wl-field__label">생년월일</span>
-            <DateField value={birth} onChange={setBirth} />
+            <DateField
+              value={birth}
+              onChange={(v) => {
+                setBirth(v);
+                setDateChosen(true);
+                setShowDateHint(false);
+              }}
+            />
 
             <div
               className="wl-segmented cal-seg"
@@ -333,9 +328,12 @@ export default function SajuInputPage() {
 
           {/* CTA — 누르면 입력값으로 /saju/result 이동(서버가 엔진 호출) */}
           <div className="cta">
-            <button type="submit" className="wl-btn wl-btn--primary" disabled={busy}>
+            <button type="submit" className="wl-btn wl-btn--primary wl-btn--moonlit" disabled={busy}>
               <MoonIcon /> {busy ? "계산하는 중…" : "내 사주 보기"}
             </button>
+            {showDateHint && (
+              <p className="cta__note" role="alert">먼저 생년월일을 선택해 주세요.</p>
+            )}
           </div>
         </form>
       </div>

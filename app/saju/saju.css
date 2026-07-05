@@ -243,8 +243,18 @@
 .privacy__icon { flex-shrink: 0; color: var(--lavender); margin-top: 1px; }
 .privacy__icon svg { width: 18px; height: 18px; }
 
-/* CTA */
-.cta { padding-bottom: env(safe-area-inset-bottom); }
+/* CTA — 여기서 .cta 는 버튼을 감싸는 래퍼일 뿐.
+   전역 .cta(골드 배경 + box-shadow 후광)가 새어 버튼 뒤 빛 번짐을 만들어서 전부 리셋.
+   실제 골드/글자/움직임은 버튼(.wl-btn--moonlit)이 담당한다. */
+.cta {
+  display: block;
+  width: 100%;
+  margin-top: 36px;
+  padding: 0 0 env(safe-area-inset-bottom);
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+}
 
 /* 엔진 미연결 안내(임시) */
 .cta__note {

@@ -24,11 +24,12 @@ interface AnnualPillar {
   matched_field?: string;
 }
 export interface EngineChart {
-  input?: { birth_datetime_local?: string };
+  input?: { birth_datetime_local?: string; hour_known?: boolean };
   character?: { name_ko: string; name_en: string; tagline: string };
   five_elements?: Record<ElKey, { pct: number }>;
   shensha?: { name: string }[];
-  pillars?: Record<"year" | "month" | "day" | "hour", Pillar>;
+  // 시간 미상이면 hour 가 없다(시주 제외).
+  pillars?: { year: Pillar; month: Pillar; day: Pillar; hour?: Pillar };
   calc_meta?: { true_solar_time_applied?: boolean };
   luck_pillars?: { direction_ko?: string; pillars?: LuckPillar[] };
   annual_fortune?: { base_year: number; day_master: string; pillars?: AnnualPillar[] };
@@ -44,6 +45,7 @@ export interface ElementBar {
 export interface PillarCol {
   title: string;
   cells: { han: string; el: ElKey; label: string }[];
+  unknown?: boolean; // 시간 미상 → 시주 없음
 }
 export interface ResultView {
   character: { name_ko: string; name_en: string; desc: string; shensha: string[] };
@@ -210,7 +212,8 @@ function currentLuck(chart: EngineChart): LuckPillar | null {
 export function isCompleteChart(c: unknown): c is EngineChart {
   const chart = c as EngineChart | null;
   if (!chart || !chart.character || !chart.pillars || !chart.five_elements) return false;
-  for (const k of ["year", "month", "day", "hour"] as const) {
+  // 시주(hour)는 시간 미상이면 없을 수 있으므로 필수에서 제외 — 년·월·일만 요구.
+  for (const k of ["year", "month", "day"] as const) {
     const p = chart.pillars[k];
     if (!p || typeof p.stem !== "string" || typeof p.branch !== "string") return false;
   }
@@ -321,7 +324,8 @@ export function buildView(chart: EngineChart): ResultView {
     cells: [cell(p.stem, p.stem_element), cell(p.branch, p.branch_element)],
   });
   const pillarCols: PillarCol[] = [
-    col("시주", pillars.hour),
+    // 시간 미상이면 시주 없음 → "시간 모름" 칸으로.
+    pillars.hour ? col("시주", pillars.hour) : { title: "시주", cells: [], unknown: true },
     col("일주", pillars.day),
     col("월주", pillars.month),
     col("연주", pillars.year),

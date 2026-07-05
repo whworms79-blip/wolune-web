@@ -233,12 +233,19 @@ export default async function SajuResultPage({
               {v.pillars.map((p) => (
                 <div className="pillar" key={p.title}>
                   <div className="pillar__title">{p.title}</div>
-                  {p.cells.map((cell, i) => (
-                    <div className="pillar__cell" key={i}>
-                      <div className={`pillar__han ${EL_HAN_CLASS[cell.el]}`}>{cell.han}</div>
-                      <div className="pillar__el">{cell.label}</div>
+                  {p.unknown ? (
+                    <div className="pillar__cell">
+                      <div className="pillar__han">?</div>
+                      <div className="pillar__el">시간 모름</div>
                     </div>
-                  ))}
+                  ) : (
+                    p.cells.map((cell, i) => (
+                      <div className="pillar__cell" key={i}>
+                        <div className={`pillar__han ${EL_HAN_CLASS[cell.el]}`}>{cell.han}</div>
+                        <div className="pillar__el">{cell.label}</div>
+                      </div>
+                    ))
+                  )}
                 </div>
               ))}
             </div>

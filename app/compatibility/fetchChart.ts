@@ -20,8 +20,9 @@ export async function fetchChartServer(
     const c = (await res.json()) as CompatChart;
     const P = c?.pillars, FE = c?.five_elements;
     if (!P || !FE) return null;
-    // 4기둥·오행 5종이 모두 있어야 궁합 계산이 안전(부분 응답은 폴백으로).
-    const okP = (["year", "month", "day", "hour"] as const).every(
+    // 년·월·일 3기둥·오행 5종이 있어야 궁합 계산이 안전. 시주(hour)는 시간 미상이면
+    // 없을 수 있으므로 필수에서 제외(부분 응답은 폴백으로).
+    const okP = (["year", "month", "day"] as const).every(
       (k) => P[k] && typeof P[k].stem === "string" && typeof P[k].branch === "string",
     );
     const okFE = (["wood", "fire", "earth", "metal", "water"] as const).every(

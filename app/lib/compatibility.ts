@@ -9,11 +9,10 @@ import type { SajuInput } from "./sajuInput";
 export type ElKey = "wood" | "fire" | "earth" | "metal" | "water";
 
 // 엔진 차트에서 궁합 계산에 쓰는 최소 형태(app/saju/result/chart.ts EngineChart의 부분집합).
+type CompatPillar = { stem: string; branch: string; stem_element: ElKey; branch_element: ElKey };
 export interface CompatChart {
-  pillars: Record<
-    "year" | "month" | "day" | "hour",
-    { stem: string; branch: string; stem_element: ElKey; branch_element: ElKey }
-  >;
+  // 시간 미상이면 hour 가 없다(시주 제외).
+  pillars: { year: CompatPillar; month: CompatPillar; day: CompatPillar; hour?: CompatPillar };
   five_elements: Record<ElKey, { pct: number; count?: number }>;
   character?: { name_ko?: string; name_en?: string; tagline?: string };
 }
@@ -98,7 +97,9 @@ function branchRelations(A: CompatChart, B: CompatChart): BranchRel {
   let he = 0, chong = 0, minor = 0, dayHe = false, dayChong = false;
   for (const ka of keys) {
     for (const kb of keys) {
-      const a = A.pillars[ka].branch, b = B.pillars[kb].branch;
+      const pa = A.pillars[ka], pb = B.pillars[kb];
+      if (!pa || !pb) continue;                 // 시간 미상 → 시지 없음, 건너뜀
+      const a = pa.branch, b = pb.branch;
       const key = pairKey(a, b);
       const isHe = a !== b && (LIUHE.has(key) || isBanhe(a, b));
       const isChong = LIUCHONG.has(key);

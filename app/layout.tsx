@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond } from "next/font/google";
 import { SITE_URL } from "./lib/site";
+import EngineWarmup from "./lib/EngineWarmup";
 import "./globals.css";
 
 // voice 폰트 — 워드마크·태그라인용 세리프(우아·신비). CSS 변수로 주입.
@@ -45,7 +46,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" className={voice.variable}>
-      <body>{children}</body>
+      <body>
+        <EngineWarmup />
+        {children}
+      </body>
     </html>
   );
 }

@@ -263,7 +263,7 @@ export default function SajuInputPage() {
             </button>
           </div>
 
-          {/* 3. 태어난 곳 */}
+          {/* 3. 태어난 곳 — 앱과 동일하게 목록에서만 선택(엔진이 아는 도시 → 진태양시 보정 정확) */}
           <div className="wl-field">
             <label className="wl-field__label" htmlFor="birth-place">
               태어난 곳
@@ -272,22 +272,17 @@ export default function SajuInputPage() {
               <span className="input-wrap__icon" aria-hidden="true">
                 <MapPinIcon />
               </span>
-              <input
-                className="wl-input"
+              <select
+                className="wl-input city-select"
                 id="birth-place"
-                type="text"
-                list="city-options"
                 value={birthPlace}
                 onChange={(e) => setBirthPlace(e.target.value)}
-                placeholder="예: 서울"
-                autoComplete="off"
-              />
+              >
+                {CITIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
             </div>
-            <datalist id="city-options">
-              {CITIES.map((c) => (
-                <option key={c} value={c} />
-              ))}
-            </datalist>
           </div>
 
           {/* 4. 성별 세그먼트 */}

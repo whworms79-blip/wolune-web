@@ -75,6 +75,20 @@
 .input-wrap__icon svg { width: 18px; height: 18px; }
 .input-wrap .wl-input { padding-left: 42px; }
 
+/* 태어난 곳 드롭다운(select) — 앱과 동일하게 목록 선택. 왼쪽 핀 아이콘 + 오른쪽 ▼.
+   높은 특이도(.input-wrap .city-select)로 .wl-input 의 background 단축속성을 확실히 덮는다. */
+.input-wrap .city-select {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  background-color: var(--surface-1b);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a9a7c8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+  cursor: pointer;
+}
+
 /* ----- 커스텀 날짜 선택기 ----- */
 .datepicker { position: relative; }
 .datepicker__trigger {

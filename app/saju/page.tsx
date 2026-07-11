@@ -283,6 +283,9 @@ export default function SajuInputPage() {
                 ))}
               </select>
             </div>
+            <p className="wl-caption wl-text-tertiary" style={{ marginTop: 6 }}>
+              목록에 없으면 가장 가까운 도시를 골라주세요. 인근 도시면 결과가 거의 같아요.
+            </p>
           </div>
 
           {/* 4. 성별 세그먼트 */}

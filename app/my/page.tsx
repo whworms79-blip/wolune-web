@@ -361,6 +361,10 @@ export default function MyPage() {
               <p className="wl-caption data-note">
                 이 기기에 저장된 사주 정보와 무드저널 기록을 모두 지워요. 되돌릴 수 없어요.
               </p>
+              {/* 정보주체의 권리 행사 지점(삭제)과 같은 자리에 방침을 둔다 */}
+              <Link className="privacy-link" href="/privacy">
+                <Shield /> 개인정보처리방침
+              </Link>
             </section>
           </div>
         </div>

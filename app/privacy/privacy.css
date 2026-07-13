@@ -1,0 +1,211 @@
+/* 개인정보처리방침 — 법률 문서가 아니라 '약속'으로 읽히게.
+   긴 글이므로 가독성(줄간격·여백·표)을 최우선으로. */
+
+.pv .topbar__btn {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  background: var(--surface-1);
+  color: var(--text-primary);
+}
+.pv .topbar__btn svg { width: 20px; height: 20px; }
+
+.pv__scroll {
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap);
+  padding-bottom: 64px;
+}
+
+/* 여는 말 */
+.pv-intro { text-align: center; }
+.pv-intro__mark {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--surface-1b);
+  border: var(--border-width) solid var(--border-gold);
+  color: var(--gold);
+}
+.pv-intro__mark svg { width: 26px; height: 26px; }
+.pv-intro__lead {
+  font-size: var(--fs-body-l);
+  line-height: 1.65;
+  color: var(--text-primary);
+}
+.pv-intro__body {
+  margin-top: 10px;
+  font-size: var(--fs-body-s);
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+.pv-intro__meta {
+  margin-top: 14px;
+  font-size: var(--fs-caption);
+  color: var(--text-tertiary);
+}
+
+/* 한눈에 보기 */
+.pv-tldr__list {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+}
+.pv-tldr__list li {
+  position: relative;
+  padding-left: 16px;
+  font-size: var(--fs-body-s);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+.pv-tldr__list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+
+/* 섹션 */
+.pv-section {
+  padding-top: 4px;
+  border-top: var(--border-width) solid var(--border-soft);
+}
+.pv-section__title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 14px 0 12px;
+  font-size: var(--fs-body-l);
+  font-weight: var(--fw-medium);
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+.pv-section__num {
+  flex-shrink: 0;
+  font-size: var(--fs-caption);
+  color: var(--gold);
+}
+.pv-section__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: var(--fs-body-s);
+  line-height: 1.75;
+  color: var(--text-secondary);
+}
+.pv-section__body strong { color: var(--text-primary); font-weight: var(--fw-medium); }
+
+.pv-h3 {
+  margin-top: 4px;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-medium);
+  color: var(--lavender);
+}
+
+.pv-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  list-style: none;
+}
+.pv-list li {
+  position: relative;
+  padding-left: 14px;
+}
+.pv-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.7em;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--lavender);
+}
+
+/* 표 — 좁은 화면에서 가로 스크롤(페이지 자체는 안 밀리게) */
+.pv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-caption);
+  line-height: 1.55;
+}
+.pv-table th,
+.pv-table td {
+  padding: 9px 10px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: var(--border-width) solid var(--border-soft);
+}
+.pv-table th {
+  color: var(--text-tertiary);
+  font-weight: var(--fw-medium);
+  background: var(--surface-1b);
+}
+.pv-table tr:last-child td { border-bottom: none; }
+.pv-table td { color: var(--text-secondary); }
+.pv-table td strong { color: var(--text-primary); }
+
+.pv-dim { color: var(--text-tertiary); }
+
+/* 강조 노트 — 왼쪽 골드 라인 */
+.pv-note {
+  padding: 10px 0 10px 12px;
+  border-left: 2px solid var(--border-gold);
+  font-size: var(--fs-caption);
+  line-height: 1.7;
+  color: var(--text-tertiary);
+}
+.pv-note strong { color: var(--text-secondary); }
+
+/* 문의 */
+.pv-contact__dl {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0;
+}
+.pv-contact__dl > div {
+  display: flex;
+  gap: 10px;
+  font-size: var(--fs-body-s);
+}
+.pv-contact__dl dt {
+  flex-shrink: 0;
+  min-width: 120px;
+  color: var(--text-tertiary);
+}
+.pv-contact__dl dd { color: var(--text-primary); }
+.pv-contact__dl a { color: var(--gold); }
+
+/* 맺음 */
+.pv-outro {
+  margin-top: 8px;
+  padding: 18px 16px;
+  border-radius: var(--radius-card);
+  background: var(--surface-1);
+  border: var(--border-width) solid var(--border-soft);
+  text-align: center;
+  font-size: var(--fs-body-s);
+  line-height: 1.7;
+  color: var(--text-tertiary);
+}
+
+/* 필수/선택 칸 — 두 글자가 줄바꿈되지 않게 */
+.pv-req { white-space: nowrap; text-align: center; }

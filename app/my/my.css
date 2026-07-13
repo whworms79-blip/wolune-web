@@ -321,3 +321,16 @@
 @media (prefers-reduced-motion: reduce) {
   .confirm-modal__card { animation: none; }
 }
+
+/* 개인정보처리방침 링크 — 데이터 초기화(권리 행사) 바로 아래, 차분하게 */
+.privacy-link {
+  margin-top: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--fs-body-s);
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+.privacy-link svg { width: 16px; height: 16px; color: var(--lavender); }
+.privacy-link:hover { color: var(--text-primary); }

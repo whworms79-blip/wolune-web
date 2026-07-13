@@ -384,3 +384,11 @@
 @keyframes saju-checking-spin {
   to { transform: rotate(360deg); }
 }
+
+/* 개인정보 안내 문구 옆 방침 링크 */
+.privacy__link {
+  color: var(--gold);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}

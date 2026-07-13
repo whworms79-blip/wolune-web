@@ -79,6 +79,10 @@ export default function Home() {
         </Link>
 
         <p className="footnote">생년월일만 있으면 시작할 수 있어요</p>
+
+        <footer className="hero__footer">
+          <Link href="/privacy">개인정보처리방침</Link>
+        </footer>
       </div>
     </main>
   );

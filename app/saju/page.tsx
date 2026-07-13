@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import DateField, { type DateValue } from "./DateField";
 import {
   saveSajuInput,
@@ -378,7 +379,10 @@ export default function SajuInputPage() {
               <ShieldIcon />
             </span>
             <p className="wl-body-s wl-text-secondary">
-              태어난 시각·장소는 정확한 계산에만 쓰고, 안전하게 보관해요.
+              태어난 시각·장소는 정확한 계산에만 쓰고, 안전하게 보관해요.{" "}
+              <Link className="privacy__link" href="/privacy">
+                개인정보처리방침
+              </Link>
             </p>
           </div>
 

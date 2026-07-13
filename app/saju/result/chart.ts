@@ -2,8 +2,6 @@
 // 원본 screens/saju-result.html 의 바인딩 로직을 TypeScript로 이식.
 // 서버 컴포넌트에서 호출(순수 함수, DOM 의존 없음).
 
-// 형충회합 배지의 툴팁 용어가 사전에 있는지 확인하는 데 쓴다(없으면 type 으로 폴백).
-import { GLOSSARY } from "./glossaryData";
 
 export type ElKey = "wood" | "fire" | "earth" | "metal" | "water";
 
@@ -306,7 +304,12 @@ export function isCompleteChart(c: unknown): c is EngineChart {
 }
 
 // ── 메인: 엔진 JSON → 뷰모델 ──
-export function buildView(chart: EngineChart): ResultView {
+// knownTerms: 엔진 용어사전의 키 집합. 형충회합 배지의 툴팁 용어를 고를 때만 쓴다
+// (상형/자형 같은 subtype 이 사전에 있으면 그걸, 없으면 type 으로 폴백).
+export function buildView(
+  chart: EngineChart,
+  knownTerms: ReadonlySet<string> = new Set(),
+): ResultView {
   const character = chart.character!;
   const fe = chart.five_elements!;
   const pillars = chart.pillars!;
@@ -454,7 +457,7 @@ export function buildView(chart: EngineChart): ResultView {
     const kind = relKind(r.type);
     const sub = (r.subtype || "").trim();
     return {
-      term: sub && GLOSSARY[sub] ? sub : r.type,
+      term: sub && knownTerms.has(sub) ? sub : r.type,
       label: sub || r.type,
       kind,
       pillars: (r.pillars || []).join("·"),

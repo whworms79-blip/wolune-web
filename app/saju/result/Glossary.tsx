@@ -2,10 +2,46 @@
 
 // 사주 용어 툴팁 — 용어에 밑줄+ⓘ, 탭하면 한 줄 설명 팝오버.
 // 모바일 우선: 탭 토글 + 바깥 탭/ESC로 닫기, 다른 용어를 열면 기존 것은 자동으로 닫힘.
-import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
-import { GLOSSARY, INLINE_TERMS } from "./glossaryData";
+//
+// 사전 내용은 엔진(GET /v1/glossary)에서 온다. 서버 컴포넌트가 lib/glossary.ts 로 받아
+// <GlossaryProvider> 로 내려주고, 여기서는 그걸 읽기만 한다 — 클라이언트는 사전을
+// 따로 받아오지 않는다(요청 0회).
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import type { GlossaryData, GlossTerm } from "../../lib/glossary";
 
 const OPEN_EVENT = "wl-glossary:open";
+
+interface GlossaryCtx {
+  terms: Record<string, GlossTerm>;
+  inline: string[];
+}
+
+// 프로바이더가 없어도 화면이 깨지진 않는다(용어는 평범한 텍스트로 렌더).
+const Ctx = createContext<GlossaryCtx>({ terms: {}, inline: [] });
+
+export function GlossaryProvider({
+  data,
+  children,
+}: {
+  data: GlossaryData;
+  children: React.ReactNode;
+}) {
+  const value = useMemo<GlossaryCtx>(() => {
+    const terms: Record<string, GlossTerm> = {};
+    for (const t of data.terms) terms[t.key] = t;
+    return { terms, inline: data.inline_terms };
+  }, [data]);
+  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+}
 
 // SSR에서 useLayoutEffect 경고를 피하면서 클라이언트에선 페인트 전에 위치 보정.
 const useIsoLayoutEffect =
@@ -20,7 +56,7 @@ export function GlossaryTerm({
   label?: string;
   triggerClassName?: string;
 }) {
-  const entry = GLOSSARY[term];
+  const entry = useContext(Ctx).terms[term];
   const [open, setOpen] = useState(false);
   const [shift, setShift] = useState(0);
   const id = useId();
@@ -94,7 +130,7 @@ export function GlossaryTerm({
           style={shift ? { transform: `translateX(calc(-50% + ${shift}px))` } : undefined}
         >
           <span className="gloss__pop-title">
-            {term}
+            {entry.name}
             {entry.hanja ? <span className="gloss__hanja">{entry.hanja}</span> : null}
           </span>
           <span className="gloss__pop-body">{entry.short}</span>
@@ -105,11 +141,17 @@ export function GlossaryTerm({
 }
 
 // 본문 문장에서 알려진 용어를 찾아 자동으로 툴팁으로 감싼다(나머지는 그대로).
-const TERM_RE = new RegExp(`(${INLINE_TERMS.join("|")})`, "g");
-
+// 어떤 용어를 자동으로 잡을지는 엔진이 정한다(inline_terms) — 한 글자 용어(형·파·쇠…)는
+// 본문에서 오탐이 나므로 엔진이 빼고 준다.
 export function GlossaryText({ text }: { text: string }) {
+  const { inline } = useContext(Ctx);
+  const re = useMemo(
+    () => (inline.length ? new RegExp(`(${inline.join("|")})`, "g") : null),
+    [inline],
+  );
   if (!text) return null;
-  const parts = text.split(TERM_RE); // 캡처그룹 → 매칭 용어가 홀수 인덱스로 남는다
+  if (!re) return <>{text}</>;
+  const parts = text.split(re); // 캡처그룹 → 매칭 용어가 홀수 인덱스로 남는다
   return (
     <>
       {parts.map((part, i) =>

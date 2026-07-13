@@ -3,7 +3,8 @@
 // 엔진이 꺼져 있으면 에러 없이 안내 화면으로 폴백.
 import Link from "next/link";
 import { buildView, isCompleteChart, type EngineChart } from "./chart";
-import { GlossaryText, GlossaryTerm } from "./Glossary";
+import { GlossaryText, GlossaryTerm, GlossaryProvider } from "./Glossary";
+import { getGlossary } from "../../lib/glossary";
 import { LinkResultPrompt } from "../../lib/LinkAccount";
 import "./result.css";
 
@@ -132,9 +133,13 @@ export default async function SajuResultPage({
     );
   }
 
-  const v = buildView(result.chart);
+  // 용어사전은 엔진이 준다(하루 캐시 + 실패 시 스냅샷 폴백). 서버에서 한 번 받아
+  // 프로바이더로 내려주므로 클라이언트는 따로 요청하지 않는다.
+  const glossary = await getGlossary();
+  const v = buildView(result.chart, new Set(glossary.terms.map((t) => t.key)));
 
   return (
+    <GlossaryProvider data={glossary}>
     <Screen>
       {/* 사주를 처음 본 "감동의 순간" 직후에만 계정 연결을 권한다(익명·1회) */}
       <LinkResultPrompt />
@@ -340,5 +345,6 @@ export default async function SajuResultPage({
         <Link className="wl-bottom-nav__tab" href="/my"><User /><span>마이</span></Link>
       </nav>
     </Screen>
+    </GlossaryProvider>
   );
 }

@@ -11,6 +11,7 @@ import {
 } from "../lib/moodJournal";
 import { LinkAccountCard, shouldShowJournalCard } from "../lib/LinkAccount";
 import { pad } from "../lib/time";
+import { useConsent } from "../lib/ConsentGate";
 import "./journal.css";
 
 /* ---------- 아이콘 ---------- */
@@ -87,6 +88,7 @@ function weekKeys(todayKey: string): string[] {
 }
 
 export default function JournalPage() {
+  const { requestConsent } = useConsent();
   const [status, setStatus] = useState<"loading" | "no-saju" | "ready">("loading");
   const [chart, setChart] = useState<Chart | null>(null);
   const [input, setInput] = useState<SajuInput | null>(null);
@@ -168,6 +170,9 @@ export default function JournalPage() {
         : undefined,
       updatedAt: new Date().toISOString(),
     };
+    // 새 데이터를 저장하는 시점 — 동의가 없으면 시트를 띄우고, 동의해야 저장한다.
+    if (!(await requestConsent())) return;
+
     setExisted(true);
     setSaved(true);
     await saveMoodEntry(entry);

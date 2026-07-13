@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Cormorant_Garamond } from "next/font/google";
 import { SITE_URL } from "./lib/site";
 import EngineWarmup from "./lib/EngineWarmup";
+import { ConsentProvider } from "./lib/ConsentGate";
 import "./globals.css";
 
 // voice 폰트 — 워드마크·태그라인용 세리프(우아·신비). CSS 변수로 주입.
@@ -48,7 +49,8 @@ export default function RootLayout({
     <html lang="ko" className={voice.variable}>
       <body>
         <EngineWarmup />
-        {children}
+        {/* 동의 게이트 — 저장 직전(useConsent)에서 시트를 띄운다 */}
+        <ConsentProvider>{children}</ConsentProvider>
       </body>
     </html>
   );

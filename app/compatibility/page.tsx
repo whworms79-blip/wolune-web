@@ -18,6 +18,7 @@ import {
 } from "../lib/compatibility";
 import CompatResult from "./CompatResult";
 import { pad, parseTime, to12h } from "../lib/time";
+import { useConsent } from "../lib/ConsentGate";
 import { CITIES } from "../lib/cities";
 import "./compatibility.css";
 
@@ -265,6 +266,7 @@ type Phase =
   | { status: "error" };
 
 export default function CompatibilityPage() {
+  const { requestConsent } = useConsent();
   const [me, setMe] = useState<PersonState>(DEFAULT_ME);
   const [you, setYou] = useState<PersonState>(DEFAULT_YOU);
   const [phase, setPhase] = useState<Phase>({ status: "form" });
@@ -292,7 +294,11 @@ export default function CompatibilityPage() {
 
     const inA = toInput(me);
     const inB = toInput(you);
-    void saveSajuInput(inA); // 내 정보는 저장 → 다음 방문 자동 채움(백그라운드)
+    // 내 정보 저장은 '새 수집'이라 동의가 필요하다. 동의하지 않으면 저장만 건너뛰고
+    // 궁합 계산·표시는 그대로 진행한다(읽기·계산은 막지 않는다).
+    void requestConsent().then((ok) => {
+      if (ok) void saveSajuInput(inA); // 다음 방문 자동 채움(백그라운드)
+    });
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 7000);

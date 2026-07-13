@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { loadSajuInput, chartUrl, chartQuery, type SajuInput } from "../lib/sajuInput";
 import { pad } from "../lib/time";
+import { useConsent } from "../lib/ConsentGate";
 import "./home.css";
 
 /* ---------- 인라인 아이콘 ---------- */
@@ -75,6 +76,12 @@ function weatherOf(score: number): { title: string; desc: string } {
 
 export default function HomePage() {
   const [state, setState] = useState<State>({ status: "loading" });
+  const { promptIfNeeded } = useConsent();
+
+  // 기존 사용자(동의 기록 없음)·방침 개정 시 — 홈에서 한 번 부드럽게 권한다("나중에" 가능)
+  useEffect(() => {
+    promptIfNeeded();
+  }, [promptIfNeeded]);
 
   useEffect(() => {
     const controller = new AbortController();

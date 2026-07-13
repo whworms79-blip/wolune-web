@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import DateField, { type DateValue } from "./DateField";
+import ReturningHint from "./ReturningHint";
 import {
   saveSajuInput,
   loadSajuInput,
@@ -221,6 +222,11 @@ export default function SajuInputPage() {
             당신을 알아가기 위해, 태어난 순간을 알려주세요
           </p>
         </header>
+
+        {/* 익명 상태에서 사주를 새로 입력하려는 순간 — 무심코 새 계정으로 다시 시작하는 걸
+            여기서 막는다. 겁주지 않고, 강요하지 않고, 그냥 알려준다.
+            (로그인한 사용자에겐 보이지 않는다) */}
+        <ReturningHint />
 
         <form className="form" autoComplete="off" onSubmit={handleSubmit}>
           {/* 1. 생년월일 + 양/음력 + (음력 시) 윤달 */}

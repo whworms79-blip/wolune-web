@@ -5,6 +5,7 @@
 // 브라우저에 남은 옛 값이 새 익명 계정으로 딸려 들어가 혼란을 줬다).
 
 import { getApp, getApps, initializeApp } from "firebase/app";
+import { markSignedIn } from "./returning";
 import {
   getAuth,
   GoogleAuthProvider,
@@ -72,6 +73,7 @@ export function onAuthChange(cb: (u: User | null) => void): () => void {
 
 // 구글 계정으로 연결. 익명이면 데이터를 유지한 채 link,
 // 이미 다른 계정에 연결된 구글이면 그 계정으로 로그인(전환).
+// 로그인 성공 시 "이 기기에서 로그인한 적 있음"을 남긴다(uid 는 저장하지 않는다).
 export async function linkGoogle(): Promise<GoogleLinkResult> {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
@@ -81,6 +83,7 @@ export async function linkGoogle(): Promise<GoogleLinkResult> {
     if (current && current.isAnonymous) {
       try {
         await linkWithPopup(current, provider);
+        markSignedIn("google");
         return "linked";
       } catch (e) {
         const code = (e as { code?: string })?.code;
@@ -96,12 +99,14 @@ export async function linkGoogle(): Promise<GoogleLinkResult> {
           } else {
             await signInWithPopup(auth, provider);
           }
+          markSignedIn("google");
           return "switchedToExisting";
         }
         throw e;
       }
     } else {
       await signInWithPopup(auth, provider);
+      markSignedIn("google");
       return "linked";
     }
   } catch (e) {
@@ -149,14 +154,19 @@ export async function finishKakaoLogin(code: string): Promise<GoogleLinkResult> 
     const body = (await res.json()) as { customToken?: string; switched?: boolean };
     if (!body.customToken) return "failed";
     await signInWithCustomToken(auth, body.customToken);
+    markSignedIn("kakao");
     return body.switched ? "switchedToExisting" : "linked";
   } catch {
     return "failed";
   }
 }
 
-// 로그아웃 → 앱이 계속 쓰이도록 즉시 익명으로 되돌린다.
-// (연결된 데이터는 구글 계정에 안전히 남아, 다시 로그인하면 복구됨)
+// 로그아웃 → 웹이 계속 쓰이도록 즉시 익명으로 되돌린다.
+// **Firestore 의 옛 데이터는 지우지 않는다** — 같은 계정으로 다시 로그인하면 그대로 돌아온다
+// (카카오는 kakaoUsers 매핑, 구글은 같은 uid).
+//
+// ⚠️ wl_returning 플래그는 **일부러 지우지 않는다.** 그게 요점이다 — 다시 왔을 때
+// "다시 만나 반가워요"로 맞이하려면 이 기기가 그를 기억해야 한다(returning.ts 참고).
 export async function signOutToAnon(): Promise<void> {
   try {
     await signOut(auth);

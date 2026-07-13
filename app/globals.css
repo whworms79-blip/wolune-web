@@ -416,3 +416,29 @@ a {
 .consent__req { margin-left: 2px; font-size: 11px; color: var(--text-tertiary); }
 .consent__desc { font-size: var(--fs-caption); line-height: 1.5; color: var(--text-tertiary); }
 .consent__link { color: var(--gold); text-decoration: underline; text-underline-offset: 2px; white-space: nowrap; }
+
+/* ── 랜딩: 돌아온 사용자 CTA (WelcomeCta.tsx) ──
+   로그인이 기본 경로, '새로 시작하기'는 눈에 띄지 않는 탈출구. */
+.welcome-cta { display: flex; flex-direction: column; align-items: stretch; width: 100%; }
+.welcome-cta .tagline { text-align: center; }
+.welcome-cta__intro { text-align: center; margin-bottom: 22px; }
+.welcome-cta .kakao-btn { width: 100%; margin-bottom: 10px; }
+/* .cta 는 원래 '내 사주 보기 →' 용이라 화살표를 오른쪽에 붙이는 레이아웃이다.
+   버튼으로 쓰면 글자가 왼쪽으로 쏠리므로 가운데로 되돌린다. */
+.welcome-cta__google {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.welcome-cta__error { margin-top: 10px; text-align: center; color: var(--rose); }
+.welcome-cta__fresh {
+  margin-top: 18px;
+  background: none;
+  border: 0;
+  color: var(--text-tertiary);
+  font-size: var(--fs-caption);
+  cursor: pointer;
+}
+.welcome-cta__fresh:hover { color: var(--text-secondary); }

@@ -395,3 +395,29 @@
 
 /* 동의 체크박스(.consent*)는 globals.css 에 있다 — 시트에서도 공용으로 쓰므로
    라우트 CSS에 두면 전역과 충돌한다(인계서 §5-2). */
+
+/* ── 돌아온 사용자 안내 (익명 상태에서만) ──
+   겁주거나 강요하지 않는다. 카드보다 한 톤 낮게, 그냥 알려주는 정도로. */
+.returning-hint {
+  margin: 18px 0 4px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--surface-1b);
+  border: 1px solid var(--border-soft);
+}
+.returning-hint__text { line-height: 1.6; }
+.returning-hint__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+/* 좁은 폭에서 '카카오로 로그/인' 처럼 글자가 쪼개지지 않게. */
+.returning-hint__actions > * {
+  flex: 1 1 0;
+  min-width: 0;
+  white-space: nowrap;
+  padding-left: 8px;
+  padding-right: 8px;
+  font-size: var(--fs-body-s);
+}
+.returning-hint__error { margin-top: 8px; color: var(--rose); }

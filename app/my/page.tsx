@@ -87,6 +87,7 @@ export default function MyPage() {
   const [chart, setChart] = useState<Chart | null>(null);
   const [ready, setReady] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [signOutOpen, setSignOutOpen] = useState(false);
   const [toast, setToast] = useState("");
   // 로그인 상태
   const [signedIn, setSignedIn] = useState(false);
@@ -124,6 +125,7 @@ export default function MyPage() {
   }
 
   async function handleSignOut() {
+    setSignOutOpen(false);
     await signOutToAnon(); // 로그아웃 → 새 익명 계정(사주·기록 없음)
     setSignedIn(false);
     setAccount({ name: null, email: null });
@@ -302,7 +304,11 @@ export default function MyPage() {
                       <span className="account-email">{account.email}</span>
                     )}
                   </span>
-                  <button type="button" className="account-signout" onClick={handleSignOut}>
+                  <button
+                    type="button"
+                    className="account-signout"
+                    onClick={() => setSignOutOpen(true)}
+                  >
                     로그아웃
                   </button>
                 </div>
@@ -380,6 +386,33 @@ export default function MyPage() {
           <Shield /> 내 데이터는 안전하게 클라우드에 보관되며, 언제든 초기화할 수 있어요.
         </p>
       </div>
+
+      {/* 로그아웃 확인 모달
+          ⚠️ 문구에 거짓을 쓰지 않는다. "기록을 다시 볼 수 없어요"는 **사실이 아니다** —
+             같은 계정으로 다시 로그인하면 그대로 돌아온다(카카오는 kakaoUsers 매핑, 구글은
+             같은 uid). 사실만 말한다. */}
+      {signOutOpen && (
+        <div className="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="signout-title">
+          <div className="confirm-modal__backdrop" onClick={() => setSignOutOpen(false)} />
+          <div className="confirm-modal__card">
+            <h2 className="wl-title-m confirm-modal__title" id="signout-title">로그아웃할까요?</h2>
+            <p className="wl-body-s confirm-modal__body">
+              사주와 기록은 안전하게 보관돼요. 같은 계정으로 다시 로그인하면 그대로 돌아옵니다.
+            </p>
+            <p className="wl-body-s wl-text-tertiary confirm-modal__note">
+              다른 계정으로 로그인하면 이 기록은 볼 수 없어요.
+            </p>
+            <div className="confirm-modal__actions">
+              <button type="button" className="wl-btn wl-btn--ghost" onClick={() => setSignOutOpen(false)}>
+                취소
+              </button>
+              <button type="button" className="wl-btn" onClick={handleSignOut}>
+                로그아웃
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 초기화 확인 모달 */}
       {confirmOpen && (

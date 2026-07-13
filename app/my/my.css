@@ -334,3 +334,6 @@
 }
 .privacy-link svg { width: 16px; height: 16px; color: var(--lavender); }
 .privacy-link:hover { color: var(--text-primary); }
+
+/* 로그아웃 확인 — 두 번째 줄(다른 계정 안내)은 한 톤 낮게. */
+.confirm-modal__note { margin-top: 6px; line-height: 1.5; }

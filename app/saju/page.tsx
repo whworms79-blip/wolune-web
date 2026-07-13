@@ -12,6 +12,7 @@ import {
 } from "../lib/sajuInput";
 import { pad, parseTime, to12h } from "../lib/time";
 import { CITIES } from "../lib/cities";
+import { saveConsent } from "../lib/consent";
 import "./saju.css";
 
 /* ---------- 인라인 아이콘(Tabler 톤, currentColor 스트로크) ---------- */
@@ -95,6 +96,10 @@ export default function SajuInputPage() {
   // 남의 생일이 조용히 내 사주로 저장·전파되는 것을 방지한다.
   const [dateChosen, setDateChosen] = useState(false);
   const [showDateHint, setShowDateHint] = useState(false);
+  // 개인정보 수집·이용 동의(필수) — 실제로 데이터를 저장하는 순간(첫 제출)에 한 번만 받는다.
+  const [agreePrivacy, setAgreePrivacy] = useState(false);
+  const [agreeAge, setAgreeAge] = useState(false);
+  const agreed = agreePrivacy && agreeAge;
   const [birthTime, setBirthTime] = useState("오전 11:11");
   const [birthPlace, setBirthPlace] = useState("서울");
   const [calendar, setCalendar] = useState<"solar" | "lunar">("solar");
@@ -186,6 +191,8 @@ export default function SajuInputPage() {
       is_leap_month: isLunar && leapMonth ? true : undefined,
     };
 
+    // 동의 기록을 먼저 남기고(입증용), 그 다음에 사주를 저장한다.
+    await saveConsent();
     await saveSajuInput(input); // 홈(/home)에서 매번 재입력 없이 불러오도록 저장
     router.push(`/saju/result?${chartQuery(input).toString()}`);
   }
@@ -386,11 +393,55 @@ export default function SajuInputPage() {
             </p>
           </div>
 
+          {/* 동의 — 버튼 바로 위에 담백하게. 골드 버튼보다 시각적으로 앞서지 않게 muted. */}
+          <div className="consent">
+            <label className="consent__row">
+              <input
+                type="checkbox"
+                className="consent__box"
+                checked={agreePrivacy}
+                onChange={(e) => setAgreePrivacy(e.target.checked)}
+              />
+              <span className="consent__text">
+                <span className="consent__lead">
+                  개인정보 수집·이용에 동의합니다. <span className="consent__req">필수</span>
+                </span>
+                <span className="consent__desc">
+                  생년월일·태어난 시각·태어난 곳·성별을 사주 계산과 기록 보관에 사용해요.{" "}
+                  <Link className="consent__link" href="/privacy" target="_blank">
+                    자세히
+                  </Link>
+                </span>
+              </span>
+            </label>
+            <label className="consent__row">
+              <input
+                type="checkbox"
+                className="consent__box"
+                checked={agreeAge}
+                onChange={(e) => setAgreeAge(e.target.checked)}
+              />
+              <span className="consent__text">
+                <span className="consent__lead">
+                  만 14세 이상입니다. <span className="consent__req">필수</span>
+                </span>
+              </span>
+            </label>
+          </div>
+
           {/* CTA — 누르면 입력값으로 /saju/result 이동(서버가 엔진 호출) */}
           <div className="saju-cta">
-            <button type="submit" className="wl-btn wl-btn--primary wl-btn--moonlit" disabled={busy}>
+            <button
+              type="submit"
+              className="wl-btn wl-btn--primary wl-btn--moonlit"
+              disabled={busy || !agreed}
+            >
               <MoonIcon /> {busy ? "계산하는 중…" : "내 사주 보기"}
             </button>
+            {/* 비활성 사유를 은은하게 알려준다(동의 → 날짜 순으로 한 줄만) */}
+            {!busy && !agreed && (
+              <p className="saju-cta__note">위 두 가지에 동의하시면 사주를 봐드릴게요.</p>
+            )}
             {showDateHint && (
               <p className="saju-cta__note" role="alert">먼저 생년월일을 선택해 주세요.</p>
             )}

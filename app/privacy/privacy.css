@@ -209,3 +209,7 @@
 
 /* 필수/선택 칸 — 두 글자가 줄바꿈되지 않게 */
 .pv-req { white-space: nowrap; text-align: center; }
+
+/* 본문 속 메일 링크 */
+.pv-section__body a { color: var(--gold); text-decoration: underline; text-underline-offset: 2px; }
+.pv-table a { color: var(--gold); }

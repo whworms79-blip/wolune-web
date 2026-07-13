@@ -11,9 +11,12 @@ export const metadata: Metadata = {
     "Wolune이 어떤 정보를 왜 받고, 어떻게 지키고, 언제 지우는지 — 숨김없이 적었습니다.",
 };
 
-// 문의 이메일 — ⚠️ 자리표시자. 실제 주소를 정해 여기만 바꾸면 전체에 반영됩니다.
-const CONTACT_EMAIL = "privacy@wolune.app";
+// 문의처 — 이 상수만 바꾸면 페이지 전체(문의·권리행사 안내)에 반영된다.
+const CONTACT_EMAIL = "jhboat17@naver.com";
+const PRIVACY_OFFICER = "조재근";
 const EFFECTIVE_DATE = "2026년 7월 13일";
+// 동의 버전 — 방침이 바뀌면 올리고, 저장된 consent.version 과 비교해 재동의를 받는다.
+export const CONSENT_VERSION = "2026-07-13";
 
 /* ---------- 인라인 아이콘 ---------- */
 const ico = {
@@ -180,7 +183,7 @@ export default function PrivacyPage() {
               자동으로 삭제됩니다.
             </li>
             <li>
-              <strong>계정을 지우고 싶다면</strong> — 아래 연락처로 알려주시면 계정과 남은
+              <strong>계정을 지우고 싶다면</strong> — <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> 로 알려주시면 계정과 남은
               정보 일체를 삭제해 드립니다.
             </li>
           </ul>
@@ -246,7 +249,7 @@ export default function PrivacyPage() {
               <tr><td>열람</td><td><strong>마이</strong>에서 저장된 사주 정보를, <strong>기록</strong>에서 남긴 무드를 확인</td></tr>
               <tr><td>정정</td><td><strong>사주</strong> 화면에서 생년월일·시각·출생지·성별을 다시 입력</td></tr>
               <tr><td>삭제</td><td><strong>마이 &gt; 내 데이터 초기화</strong></td></tr>
-              <tr><td>처리정지·계정 삭제</td><td>아래 연락처로 요청 (본인 확인 후 처리)</td></tr>
+              <tr><td>처리정지·계정 삭제</td><td><a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> 로 요청 (본인 확인 후 처리)</td></tr>
             </tbody>
           </table>
           <p className="pv-note">
@@ -272,7 +275,7 @@ export default function PrivacyPage() {
           </p>
           <p>
             만 14세 미만 아동의 정보가 법정대리인 동의 없이 수집된 것을 알게 되면
-            <strong> 지체 없이 삭제</strong>합니다. 그런 사실을 발견하셨다면 아래 연락처로
+            <strong> 지체 없이 삭제</strong>합니다. 그런 사실을 발견하셨다면 <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> 로
             알려주세요.
           </p>
         </Section>
@@ -293,7 +296,7 @@ export default function PrivacyPage() {
               최대한 빠르게, 사람이 직접 답해드립니다.
             </p>
             <dl className="pv-contact__dl">
-              <div><dt>개인정보 보호책임자</dt><dd>(성명 — 확정 후 기재)</dd></div>
+              <div><dt>개인정보 보호책임자</dt><dd>{PRIVACY_OFFICER}</dd></div>
               <div><dt>이메일</dt><dd><a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a></dd></div>
             </dl>
             <p className="pv-note">

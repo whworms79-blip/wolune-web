@@ -2,13 +2,33 @@
 // 원본 screens/saju-result.html 의 바인딩 로직을 TypeScript로 이식.
 // 서버 컴포넌트에서 호출(순수 함수, DOM 의존 없음).
 
+// 형충회합 배지의 툴팁 용어가 사전에 있는지 확인하는 데 쓴다(없으면 type 으로 폴백).
+import { GLOSSARY } from "./glossaryData";
+
 export type ElKey = "wood" | "fire" | "earth" | "metal" | "water";
 
+// 십성(十神) — 일간(나) 기준 그 글자와의 관계. 일간 자신은 stem이 "일원"으로 온다.
+interface TenGod {
+  stem: string;
+  branch: string;
+}
+// 지장간(支藏干) — 지지 속에 숨은 천간(여기·중기·정기). ※ 타입만 선언, 화면 표시는 다음 단계.
+interface HiddenStem {
+  stem: string;
+  position: string; // 여기 | 중기 | 정기
+  position_en: string; // residual | middle | primary
+  ten_god: string;
+}
 interface Pillar {
   stem: string;
   branch: string;
   stem_element: ElKey;
   branch_element: ElKey;
+  // 엔진은 아래 필드도 이미 보내준다(구버전/부분응답 대비해 옵셔널).
+  ten_god?: TenGod; // 십성 — 이번 단계에서 명식 표에 표시
+  hidden_stems?: HiddenStem[]; // 지장간 — 다음 단계
+  twelve_stage?: string; // 12운성 — 다음 단계
+  is_void?: boolean; // 공망 — 다음 단계
 }
 interface LuckPillar {
   start_age: number;
@@ -23,6 +43,15 @@ interface AnnualPillar {
   fields?: Record<string, number>; // 세운 분야별 점수(재물·애정·건강·성장), 0~100
   matched_field?: string;
 }
+// 형충회합(刑沖會合) — 네 지지 사이 관계 한 건.
+// type: 육합·삼합·방합·육충·육해·형·파 / subtype: 상형·자형·완전·반합 … (없으면 null)
+interface EngineRelation {
+  type: string;
+  subtype?: string | null;
+  pillars?: string[]; // 한글 기둥명 (예: ["월지","일지"])
+  pillar_keys?: string[]; // 영문 키 (예: ["month","day"])
+  branches?: string[]; // 지지 한자 (예: ["卯","戌"])
+}
 export interface EngineChart {
   input?: { birth_datetime_local?: string; hour_known?: boolean };
   character?: { name_ko: string; name_en: string; tagline: string };
@@ -33,6 +62,7 @@ export interface EngineChart {
   calc_meta?: { true_solar_time_applied?: boolean };
   luck_pillars?: { direction_ko?: string; pillars?: LuckPillar[] };
   annual_fortune?: { base_year: number; day_master: string; pillars?: AnnualPillar[] };
+  relations?: EngineRelation[]; // 형충회합
 }
 
 export interface ElementBar {
@@ -42,10 +72,25 @@ export interface ElementBar {
   h: number;
   strong: boolean;
 }
+// 형충회합 한 줄 — [배지] 기둥들 · 지지들 — 느낌
+export type RelKind = "harmony" | "clash" | "tension";
+export interface RelationRow {
+  term: string; // 툴팁에 쓸 용어(사전에 있는 것)
+  label: string; // 배지 텍스트 — subtype 있으면 그것(상형), 없으면 type(육합)
+  kind: RelKind; // 색: 합=라벤더 / 충=화 / 그 외=로즈
+  pillars: string; // "월지·일지"
+  branches: string; // "卯·戌"
+  feel: string; // "어울리는 기운"
+}
+
 export interface PillarCol {
   title: string;
-  cells: { han: string; el: ElKey; label: string }[];
-  unknown?: boolean; // 시간 미상 → 시주 없음
+  // god: 그 글자의 십성(천간칸=ten_god.stem, 지지칸=ten_god.branch). 일간 천간은 "일원".
+  cells: { han: string; el: ElKey; label: string; god?: string }[];
+  unknown?: boolean; // 시간 미상 → 시주 없음(아래 항목도 표시하지 않음)
+  isVoid?: boolean; // 공망 — 기둥명 아래 배지
+  twelveStage?: string; // 12운성 (장생·쇠·태·사 …)
+  hiddenStems?: string; // 지장간 — 한자 나열 (예: 戊庚丙)
 }
 export interface ResultView {
   character: { name_ko: string; name_en: string; desc: string; shensha: string[] };
@@ -66,6 +111,8 @@ export interface ResultView {
     pillars: { startAge: number; ko: string; ganzhi: string; current: boolean }[];
   } | null;
   pillars: PillarCol[];
+  godNote: string; // 명식 표 아래 — 두드러지는 십성을 사람 말로(없으면 "")
+  relations: RelationRow[]; // 형충회합(없으면 빈 배열)
   meongsikNote: string;
 }
 
@@ -150,6 +197,34 @@ const TEN_GOD_REFLECT: Record<string, string> = {
   "겁재": "차오르는 추진의 기운을 어떤 방향으로 쓰고 싶나요?",
 };
 
+// 형충회합 색·문구 (앱 result_screen.dart 의 _relStyle 과 동일 규칙)
+//   합 포함(육합·삼합·방합) → 어울림 / 충 포함(육충) → 부딪힘 / 그 외(형·해·파) → 잔잔한 긴장
+// "좋다/나쁘다" 단정 없이 관계의 '성질'만 말한다.
+const REL_FEEL: Record<RelKind, string> = {
+  harmony: "어울리는 기운",
+  clash: "부딪히는 기운",
+  tension: "잔잔한 긴장",
+};
+function relKind(type: string): RelKind {
+  if (type.includes("합")) return "harmony";
+  if (type.includes("충")) return "clash";
+  return "tension";
+}
+
+// 원국(타고난 명식)에 자주 보이는 십성의 '결'. TEN_GOD_TONE 은 '올해'용 문장이라 여기선 따로 둔다.
+const TEN_GOD_NATURE: Record<string, string> = {
+  정관: "질서와 책임을 지키며 신뢰를 쌓아가는 결",
+  편관: "부담을 동력으로 바꾸며 스스로를 단련하는 결",
+  정인: "배우고 품으며 안으로 채워가는 결",
+  편인: "남다른 직관으로 깊이 파고드는 결",
+  식신: "여유롭게 표현하고 즐기며 피어나는 결",
+  상관: "틀을 넘어 재능을 드러내는 결",
+  정재: "차곡차곡 쌓아 현실을 단단히 하는 결",
+  편재: "기회를 넓게 펼치며 크게 움직이는 결",
+  비견: "스스로 서고 곁을 함께 챙기는 결",
+  겁재: "겨루며 밀고 나아가는 추진의 결",
+};
+
 // ── 한국어 조사 헬퍼 ──
 function hasJong(word: string): boolean {
   const c = word.charCodeAt(word.length - 1);
@@ -160,6 +235,7 @@ const iRaNeun = (w: string) => (hasJong(w) ? "이라는" : "라는");
 const eulReul = (w: string) => (hasJong(w) ? "을" : "를");
 const euRo = (w: string) => (hasJong(w) ? "으로" : "로");
 const eunNeun = (w: string) => (hasJong(w) ? "은" : "는");
+const gwaWa = (w: string) => (hasJong(w) ? "과" : "와");
 
 function fmtPct(p: number): string {
   return (Math.round(p * 10) / 10).toString().replace(/\.0$/, "");
@@ -321,20 +397,71 @@ export function buildView(chart: EngineChart): ResultView {
       )
     : [];
 
-  // 명식 8자 (시주·일주·월주·연주)
+  // 명식 8자 (시주·일주·월주·연주) — 각 글자 밑에 그 글자의 십성을 함께 싣는다.
   const yang = (han: string) => ((YANG_STEM + YANG_BRANCH).indexOf(han) !== -1 ? "양" : "음");
-  const cell = (han: string, el: ElKey) => ({ han, el, label: `${EL_KO[el]} · ${yang(han)}` });
+  const cell = (han: string, el: ElKey, god?: string) => ({
+    han,
+    el,
+    label: `${EL_KO[el]} · ${yang(han)}`,
+    god,
+  });
   const col = (title: string, p: Pillar): PillarCol => ({
     title,
-    cells: [cell(p.stem, p.stem_element), cell(p.branch, p.branch_element)],
+    cells: [
+      cell(p.stem, p.stem_element, p.ten_god?.stem), // 일간 천간이면 "일원"
+      cell(p.branch, p.branch_element, p.ten_god?.branch),
+    ],
+    isVoid: p.is_void,
+    twelveStage: p.twelve_stage,
+    // 지장간은 숨은 천간(여기·중기·정기)의 글자만 이어 붙여 보여준다(앱과 동일).
+    hiddenStems: p.hidden_stems?.map((h) => h.stem).join("") || undefined,
   });
   const pillarCols: PillarCol[] = [
-    // 시간 미상이면 시주 없음 → "시간 모름" 칸으로.
+    // 시간 미상이면 시주 없음 → "시간 모름" 칸으로(십성도 표시하지 않음).
     pillars.hour ? col("시주", pillars.hour) : { title: "시주", cells: [], unknown: true },
     col("일주", pillars.day),
     col("월주", pillars.month),
     col("연주", pillars.year),
   ];
+
+  // 두드러지는 십성 — 여덟 자(시주 미상이면 여섯 자)에서 가장 자주 보이는 것.
+  // '일원'은 기준점(나 자신)이라 세지 않는다. 동률이면 둘까지 나란히 말한다.
+  const godCount = new Map<string, number>();
+  for (const p of [pillars.year, pillars.month, pillars.day, pillars.hour]) {
+    for (const g of [p?.ten_god?.stem, p?.ten_god?.branch]) {
+      if (!g || g === "일원" || !TEN_GOD_NATURE[g]) continue;
+      godCount.set(g, (godCount.get(g) || 0) + 1);
+    }
+  }
+  const ranked = [...godCount.entries()].sort((a, b) => b[1] - a[1]);
+  let godNote = "";
+  if (ranked.length) {
+    const top = ranked.filter((e) => e[1] === ranked[0][1]).slice(0, 2).map((e) => e[0]);
+    const lead =
+      top.length === 2
+        ? // '…결과 …' 로 붙어 읽히지 않도록 쉼표+'그리고'로 끊는다.
+          `${top[0]}${gwaWa(top[0])} ${top[1]}${iGa(top[1])} 나란히 자주 보여요 — ` +
+          `${TEN_GOD_NATURE[top[0]]}, 그리고 ${TEN_GOD_NATURE[top[1]]}이 함께 흐릅니다.`
+        : `${top[0]}${iGa(top[0])} 가장 자주 보여요 — ${TEN_GOD_NATURE[top[0]]}입니다.`;
+    godNote =
+      `여덟 자를 일간(나) 기준으로 보면, ${lead} ` +
+      `다만 한두 글자로 사람을 단정할 수는 없어요. 여러 기운이 함께 어울리는 결로 읽어주세요.`;
+  }
+
+  // 형충회합 — 엔진 relations 를 화면용 한 줄들로.
+  // 배지는 subtype 우선(상형/자형), 툴팁 용어는 사전에 있는 것으로(없으면 type 으로 폴백).
+  const relations: RelationRow[] = (chart.relations || []).map((r) => {
+    const kind = relKind(r.type);
+    const sub = (r.subtype || "").trim();
+    return {
+      term: sub && GLOSSARY[sub] ? sub : r.type,
+      label: sub || r.type,
+      kind,
+      pillars: (r.pillars || []).join("·"),
+      branches: (r.branches || []).join("·"),
+      feel: REL_FEEL[kind],
+    };
+  });
 
   // 명식 노트 (일간)
   const reading = (STEM_KO[day.stem] || day.stem) + EL_KO[day.stem_element];
@@ -377,6 +504,8 @@ export function buildView(chart: EngineChart): ResultView {
     },
     luck,
     pillars: pillarCols,
+    godNote,
+    relations,
     meongsikNote,
   };
 }

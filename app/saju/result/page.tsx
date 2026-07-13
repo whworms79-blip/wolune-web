@@ -257,22 +257,74 @@ export default async function SajuResultPage({
               {v.pillars.map((p) => (
                 <div className="pillar" key={p.title}>
                   <div className="pillar__title">{p.title}</div>
+                  {/* 공망 배지 자리 — 공망이 아닌 기둥도 빈 슬롯을 둬서 네 기둥의 행을 맞춘다.
+                      (앱은 이 칸이 없어 공망 기둥만 아래로 밀리는데, 웹은 정렬을 유지) */}
+                  <div className="pillar__void">
+                    {p.isVoid && <GlossaryTerm term="공망" />}
+                  </div>
                   {p.unknown ? (
                     <div className="pillar__cell">
                       <div className="pillar__han">?</div>
                       <div className="pillar__el">시간 모름</div>
                     </div>
                   ) : (
-                    p.cells.map((cell, i) => (
-                      <div className="pillar__cell" key={i}>
-                        <div className={`pillar__han ${EL_HAN_CLASS[cell.el]}`}>{cell.han}</div>
-                        <div className="pillar__el">{cell.label}</div>
-                      </div>
-                    ))
+                    <>
+                      {p.cells.map((cell, i) => (
+                        <div className="pillar__cell" key={i}>
+                          <div className={`pillar__han ${EL_HAN_CLASS[cell.el]}`}>{cell.han}</div>
+                          <div className="pillar__el">{cell.label}</div>
+                          {cell.god && (
+                            <div className="pillar__god">
+                              <GlossaryTerm term={cell.god} />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {/* 12운성 — 단계명을 그대로 보여주되 툴팁은 그 단계 설명 */}
+                      {p.twelveStage && (
+                        <div className="pillar__stage">
+                          <GlossaryTerm term={p.twelveStage} />
+                        </div>
+                      )}
+                      {/* 지장간 — 한자 나열을 라벨로, 툴팁은 '지장간' 개념 설명 */}
+                      {p.hiddenStems && (
+                        <div className="pillar__hidden">
+                          <GlossaryTerm term="지장간" label={p.hiddenStems} />
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               ))}
             </div>
+            {v.godNote && (
+              <p className="meongsik__godnote"><GlossaryText text={v.godNote} /></p>
+            )}
+
+            {/* 형충회합 — 네 지지 사이의 관계(앱과 동일 구성: 구분선 + 전용 섹션) */}
+            <section className="relations">
+              <h3 className="relations__title">
+                <GlossaryTerm term="형충회합" label="형충회합(刑沖會合)" />
+              </h3>
+              <p className="relations__sub">네 지지 사이에 흐르는 관계예요.</p>
+              {v.relations.length ? (
+                <ul className="relations__list">
+                  {v.relations.map((r, i) => (
+                    <li className={`relation relation--${r.kind}`} key={i}>
+                      <span className="relation__badge">
+                        <GlossaryTerm term={r.term} label={r.label} />
+                      </span>
+                      <span className="relation__body">
+                        {r.pillars} <span className="relation__branches">{r.branches}</span> — {r.feel}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="relations__empty">두드러진 관계가 보이지 않아요.</p>
+              )}
+            </section>
+
             <p className="meongsik__note"><GlossaryText text={v.meongsikNote} /></p>
           </div>
         </details>

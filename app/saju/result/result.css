@@ -135,6 +135,110 @@
 }
 .pillar__han { font-size: 22px; font-weight: var(--fw-medium); line-height: 1.1; }
 .pillar__el { font-size: var(--fs-caption); color: var(--text-secondary); }
+/* 십성 — 한자보다 작고 은은하게. 표가 복잡해 보이지 않도록 톤을 낮춘다. */
+.pillar__god {
+  margin-top: 5px;
+  font-size: 11px;
+  line-height: 1.2;
+  color: var(--text-tertiary);
+}
+/* 셀 안에서는 툴팁 밑줄/ⓘ도 한 톤 낮춰 자잘한 노이즈를 줄인다. */
+.pillar__god .gloss__term { border-bottom-color: var(--border-gold); }
+.pillar__god .gloss__mark { font-size: 0.66em; opacity: 0.75; }
+
+/* 공망 배지 — 기둥명 바로 아래. 유일하게 색을 쓰는 자리(rose)라 과하지 않게 아주 작게. */
+.pillar__void {
+  /* 공망이 없는 기둥도 같은 높이를 차지하게 해 네 기둥의 행을 정렬한다 */
+  min-height: 14px;
+  margin: -2px 0 4px;
+  font-size: 10px;
+  line-height: 1.2;
+  color: var(--rose);
+}
+.pillar__void .gloss__term { color: var(--rose); border-bottom-color: var(--border-rose); }
+.pillar__void .gloss__mark { color: var(--rose); font-size: 0.66em; opacity: 0.8; }
+
+/* 12운성 — 십성보다 한 단계 위 톤(secondary), 한자보다 훨씬 작게 */
+.pillar__stage {
+  margin-top: 8px;
+  font-size: 11px;
+  line-height: 1.2;
+  color: var(--text-secondary);
+}
+/* 지장간 — 가장 은은하게(tertiary). 한자 나열이라 자간만 살짝 벌린다. */
+.pillar__hidden {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.3;
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary);
+}
+.pillar__stage .gloss__term,
+.pillar__hidden .gloss__term { border-bottom-color: var(--border-gold); }
+.pillar__stage .gloss__mark,
+.pillar__hidden .gloss__mark { font-size: 0.66em; opacity: 0.75; }
+
+/* ── 형충회합 — 명식 표 아래 전용 섹션(구분선으로 분리) ── */
+.relations {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: var(--border-width) solid var(--border-soft);
+}
+.relations__title {
+  font-size: var(--fs-label);
+  font-weight: var(--fw-medium);
+  color: var(--text-primary);
+}
+.relations__sub {
+  margin-top: 4px;
+  font-size: var(--fs-caption);
+  color: var(--text-tertiary);
+}
+.relations__list {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+}
+.relation { display: flex; align-items: center; gap: 10px; }
+/* 배지 — 이 섹션의 유일한 색 포인트. 관계 성질에 따라 색만 달라진다. */
+.relation__badge {
+  flex-shrink: 0;
+  min-width: 46px;
+  padding: 4px 10px;
+  text-align: center;
+  border-radius: var(--radius-chip-info);
+  background: var(--surface-1b);
+  font-size: var(--fs-caption);
+  line-height: 1.3;
+}
+.relation--harmony .relation__badge { color: var(--lavender); }
+.relation--clash   .relation__badge { color: var(--element-fire); }
+.relation--tension .relation__badge { color: var(--rose); }
+/* 배지 안 툴팁 밑줄·ⓘ도 배지 색을 따라가게(따로 튀지 않도록) */
+.relation__badge .gloss__term { color: inherit; border-bottom-color: currentColor; opacity: 0.95; }
+.relation__badge .gloss__mark { color: inherit; font-size: 0.66em; opacity: 0.7; }
+
+.relation__body {
+  font-size: var(--fs-body-s);
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+.relation__branches { margin-left: 4px; letter-spacing: 0.04em; }
+.relations__empty {
+  margin-top: 10px;
+  font-size: var(--fs-body-s);
+  color: var(--text-tertiary);
+}
+
+/* 명식 표 아래 — 두드러지는 십성 설명(사람 말) */
+.meongsik__godnote {
+  margin-top: 14px;
+  font-size: var(--fs-body-s);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
 .meongsik__note { margin-top: 14px; font-size: var(--fs-body-s); color: var(--text-tertiary); }
 
 /* 하단 4탭 고정 */

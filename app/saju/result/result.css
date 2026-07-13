@@ -404,3 +404,48 @@
 .luck__col--current .luck__age { color: var(--gold); }
 .luck__ko { font-size: 16px; color: var(--text-primary); font-weight: var(--fw-medium); }
 .luck__hanja { font-size: 12px; color: var(--text-tertiary); }
+
+/* ── 다가오는 달(월운) — '올해의 흐름' 카드 안. 대운 타임라인과 같은 형식·톤. ──
+   이번 달만 골드 테두리 + "이번 달" 라벨(대운의 current 와 같은 방식).
+   점수 막대를 두지 않는다 — 달마다 점수를 매기면 '나쁜 달'이 생긴다. */
+.months {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-soft);
+}
+.months__label { display: block; margin-bottom: 12px; }
+.months__track {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.months__track::-webkit-scrollbar { display: none; }
+.months__col {
+  flex: 1 1 0;
+  min-width: 58px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  border-radius: 12px;
+  background: var(--surface-1b);
+  border: 1px solid var(--border-soft);
+}
+.months__col--current {
+  border-color: var(--gold);
+  background: var(--surface-2);
+}
+.months__month { font-size: 12px; color: var(--text-tertiary); }
+.months__col--current .months__month { color: var(--gold); }
+.months__god { font-size: 15px; font-weight: var(--fw-medium); }
+.months__hanja { font-size: 12px; color: var(--text-tertiary); }
+.months__now {
+  margin-top: 2px;
+  font-size: 10px;
+  color: var(--gold);
+  letter-spacing: 0.5px;
+}
+.months__tone { margin-top: 14px; line-height: 1.6; }

@@ -33,6 +33,13 @@ interface LuckPillar {
   stem: string;
   branch: string;
 }
+// 엔진이 내려주는 해석 문구. 예전엔 웹(여기)과 앱(saju_view.dart)이 같은 십성 문구
+// 테이블을 **각자** 하드코딩하고 있었다 — 용어사전(웹 53 / 앱 26)이 어긋났던 것과 같은 구조.
+// 이제 engine/fortune_copy.py 한 곳에서 온다.
+interface FortuneCopy {
+  title: string;
+  tone: string;
+}
 interface AnnualPillar {
   year: number;
   stem: string;
@@ -40,6 +47,17 @@ interface AnnualPillar {
   stem_ten_god?: string;
   fields?: Record<string, number>; // 세운 분야별 점수(재물·애정·건강·성장), 0~100
   matched_field?: string;
+  copy?: FortuneCopy;
+}
+// 월운(月運) 한 달 — 절기 기준. **점수가 없다**(달마다 점수를 매기면 '나쁜 달'이 생긴다).
+interface MonthlyPillar {
+  year: number;
+  month: number;
+  stem: string;
+  branch: string;
+  stem_element: ElKey;
+  stem_ten_god?: string;
+  copy?: FortuneCopy;
 }
 // 형충회합(刑沖會合) — 네 지지 사이 관계 한 건.
 // type: 육합·삼합·방합·육충·육해·형·파 / subtype: 상형·자형·완전·반합 … (없으면 null)
@@ -60,6 +78,12 @@ export interface EngineChart {
   calc_meta?: { true_solar_time_applied?: boolean };
   luck_pillars?: { direction_ko?: string; pillars?: LuckPillar[] };
   annual_fortune?: { base_year: number; day_master: string; pillars?: AnnualPillar[] };
+  monthly_fortune?: {
+    base_year: number;
+    base_month: number;
+    day_master: string;
+    pillars?: MonthlyPillar[];
+  };
   relations?: EngineRelation[]; // 형충회합
 }
 
@@ -79,6 +103,16 @@ export interface RelationRow {
   pillars: string; // "월지·일지"
   branches: string; // "卯·戌"
   feel: string; // "어울리는 기운"
+}
+
+// 월운 스트립 한 칸. current 는 대운 타임라인과 같은 방식으로 강조한다(골드 + "이번 달").
+export interface MonthCell {
+  label: string; // "7월"
+  god: string; // 십성 — 툴팁 용어이기도 하다(정재·편관…)
+  ganzhi: string; // "乙未"
+  el: ElKey; // 천간 오행 — 색
+  title: string; // 엔진 문구(짧은 결) — 접근성 라벨용
+  current: boolean;
 }
 
 export interface PillarCol {
@@ -102,6 +136,10 @@ export interface ResultView {
     period: string;
     desc: string;
     tracks: { label: string; pct: number }[];
+    // 다가오는 달(월운) — 6칸 스트립. 세운의 하위 해상도라 같은 카드 안에 둔다.
+    // 이번 달만 문장(now)을 붙인다. 6달 모두 문장을 쓰면 카드가 문단 벽이 된다.
+    months: MonthCell[];
+    nowMonth: { label: string; god: string; tone: string } | null;
   };
   // 대운의 흐름 타임라인(10년 단위). 현재 대운은 current=true로 강조.
   luck: {
@@ -163,25 +201,9 @@ const CHAR_KEYWORD: Record<string, string> = {
   "깊은 뿌리": "깊음", "너른 나무": "너름", "피어나는 꽃": "피어남",
   "빛나는 검": "빛남", "흔들리지 않는 산": "흔들리지 않음",
 };
-const TEN_GOD_TITLE: Record<string, string> = {
-  "정관": "자리를 다지는 해", "편관": "한 걸음 더 나아가는 해",
-  "정인": "안으로 채우는 해", "편인": "깊이 파고드는 해",
-  "식신": "여유롭게 피어나는 해", "상관": "틀을 넘어서는 해",
-  "정재": "차곡차곡 쌓는 해", "편재": "넓게 펼치는 해",
-  "비견": "나를 세우는 해", "겁재": "밀고 나아가는 해",
-};
-const TEN_GOD_TONE: Record<string, string> = {
-  "정관": "질서와 책임이 또렷해지는 해 — 자리를 지키며 신뢰를 쌓기 좋은 흐름이에요.",
-  "편관": "도전과 성장의 기운이 흐르는 해 — 부담을 동력으로 바꾸기 좋은 흐름이에요.",
-  "정인": "배움과 보살핌이 깊어지는 해 — 안으로 채우고 기대도 좋은 흐름이에요.",
-  "편인": "직관과 탐구가 살아나는 해 — 남다른 시선으로 파고들기 좋은 흐름이에요.",
-  "식신": "표현과 여유가 피어나는 해 — 즐기며 만들어내기 좋은 흐름이에요.",
-  "상관": "재능과 변화의 기운이 강한 해 — 틀을 벗어나 드러내기 좋은 흐름이에요.",
-  "정재": "꾸준함이 결실로 이어지는 해 — 차근차근 쌓아 지키기 좋은 흐름이에요.",
-  "편재": "기회와 확장의 기운이 도는 해 — 넓게 움직이며 굴리기 좋은 흐름이에요.",
-  "비견": "자립과 동행의 기운이 함께하는 해 — 나를 세우고 곁을 챙기기 좋은 흐름이에요.",
-  "겁재": "경쟁과 추진의 기운이 강한 해 — 함께 겨루며 밀고 나아가기 좋은 흐름이에요.",
-};
+// 세운·월운 해석 문구는 **엔진이 내려준다**(engine/fortune_copy.py).
+// 예전엔 이 자리에 TEN_GOD_TITLE/TEN_GOD_TONE 이 있었고, 앱(saju_view.dart)에도
+// 똑같은 테이블이 따로 있었다(두 벌). 용어사전이 어긋났던 것과 같은 구조라 합쳤다.
 const TEN_GOD_REFLECT: Record<string, string> = {
   "정관": "다가오는 책임과 질서를 어떤 마음으로 받아들이고 싶나요?",
   "편관": "다가오는 도전을 어떻게 맞이하고 싶나요?",
@@ -381,12 +403,12 @@ export function buildView(
   let yfPeriod = "";
   if (af && sy) {
     yfPeriod = String(af.base_year);
-    yfTitle = (yGod && TEN_GOD_TITLE[yGod]) || "흐름을 살피는 해";
+    yfTitle = sy.copy?.title || "흐름을 살피는 해";
     const gz = ganzhiKo(sy.stem, sy.branch);
     const dm = af.day_master;
     const dmKo = (STEM_KO[dm] || dm) + (dayEl ? EL_KO[dayEl] : "");
     yfDesc = `${af.base_year}년은 ${gz}(${sy.stem}${sy.branch})년 — 일간 ${dmKo}(${dm})에게는 ${yGod || "—"}의 해예요.`;
-    if (yGod && TEN_GOD_TONE[yGod]) yfDesc += " " + TEN_GOD_TONE[yGod];
+    if (sy.copy?.tone) yfDesc += " " + sy.copy.tone;
     if (cl) {
       yfDesc += ` 지금은 ${ganzhiKo(cl.stem, cl.branch)}(${cl.stem}${cl.branch}) 대운${dir}을 지나는 흐름이에요.`;
     }
@@ -399,6 +421,28 @@ export function buildView(
         (a, b) => b.pct - a.pct,
       )
     : [];
+
+  // 다가오는 달(월운) — 엔진이 이번 달부터 6개월치를 준다(절기 기준 월간지).
+  // 첫 칸이 이번 달이다(base_year/base_month = 오늘 기준).
+  const mf = chart.monthly_fortune;
+  const months: MonthCell[] = (mf?.pillars || []).map((p) => ({
+    label: `${p.month}월`,
+    god: p.stem_ten_god || "",
+    ganzhi: p.stem + p.branch,
+    el: p.stem_element,
+    title: p.copy?.title || "",
+    current: p.year === mf!.base_year && p.month === mf!.base_month,
+  }));
+  const cm = (mf?.pillars || []).find(
+    (p) => p.year === mf!.base_year && p.month === mf!.base_month,
+  );
+  const nowMonth = cm
+    ? {
+        label: `${cm.month}월`,
+        god: cm.stem_ten_god || "",
+        tone: cm.copy?.tone || "",
+      }
+    : null;
 
   // 명식 8자 (시주·일주·월주·연주) — 각 글자 밑에 그 글자의 십성을 함께 싣는다.
   const yang = (han: string) => ((YANG_STEM + YANG_BRANCH).indexOf(han) !== -1 ? "양" : "음");
@@ -504,6 +548,8 @@ export function buildView(
       period: yfPeriod,
       desc: yfDesc,
       tracks: yfTracks,
+      months,
+      nowMonth,
     },
     luck,
     pillars: pillarCols,

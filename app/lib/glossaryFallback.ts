@@ -4,7 +4,7 @@ import type { GlossaryData } from "./glossary";
 
 export const GLOSSARY_FALLBACK: GlossaryData = {
   "version": "1.0.0",
-  "count": 57,
+  "count": 58,
   "inline_terms": [
     "진태양시",
     "형충회합",
@@ -12,6 +12,7 @@ export const GLOSSARY_FALLBACK: GlossaryData = {
     "일간",
     "대운",
     "세운",
+    "월운",
     "오행",
     "명식",
     "십성",
@@ -47,6 +48,13 @@ export const GLOSSARY_FALLBACK: GlossaryData = {
       "name": "세운",
       "hanja": "歲運",
       "short": "그 해 한 해의 흐름이에요.",
+      "category": "concept"
+    },
+    {
+      "key": "월운",
+      "name": "월운",
+      "hanja": "月運",
+      "short": "그 달 한 달의 흐름이에요. 절기를 기준으로 나눕니다.",
       "category": "concept"
     },
     {

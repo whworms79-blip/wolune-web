@@ -217,6 +217,36 @@ export default async function SajuResultPage({
                 </div>
               </div>
             ))}
+
+            {/* 다가오는 달(월운) — 세운의 하위 해상도라 같은 카드 안에 둔다.
+                6칸을 나란히 보여주되 문장은 이번 달 하나만(6달 다 쓰면 문단 벽이 된다). */}
+            {v.yearFlow.months.length > 0 && (
+              <div className="months">
+                <span className="wl-section-label months__label">
+                  다가오는 달 · <GlossaryTerm term="월운" label="월운(月運)" />
+                </span>
+                <div className="months__track">
+                  {v.yearFlow.months.map((m) => (
+                    <div
+                      key={`${m.label}-${m.ganzhi}`}
+                      className={`months__col${m.current ? " months__col--current" : ""}`}
+                      aria-label={`${m.label} ${m.god} — ${m.title}${m.current ? " (이번 달)" : ""}`}
+                    >
+                      <span className="months__month">{m.label}</span>
+                      <span className={`months__god wl-el-${m.el}`}>{m.god}</span>
+                      <span className="months__hanja">{m.ganzhi}</span>
+                      {m.current && <span className="months__now">이번 달</span>}
+                    </div>
+                  ))}
+                </div>
+                {v.yearFlow.nowMonth && (
+                  <p className="wl-body-s wl-text-secondary months__tone">
+                    이번 달은 <GlossaryTerm term={v.yearFlow.nowMonth.god} />의 달 —{" "}
+                    {v.yearFlow.nowMonth.tone}
+                  </p>
+                )}
+              </div>
+            )}
           </section>
 
           {/* 3-1. 대운의 흐름 타임라인 (10년 단위) */}

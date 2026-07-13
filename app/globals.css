@@ -198,3 +198,109 @@ a {
     50% { transform: translateY(-6px); }
   }
 }
+
+/* ---------- 계정 연결 유도(link-*) — 여러 라우트 공용이라 전역에 둔다 ---------- */
+.link-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 12px;
+  background: rgba(8, 9, 20, 0.6);
+  animation: link-fade 0.2s ease-out;
+}
+@keyframes link-fade { from { opacity: 0; } to { opacity: 1; } }
+.link-sheet {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  padding: 22px 22px 16px;
+  border-radius: var(--radius-card);
+  background: var(--surface-2);
+  border: var(--border-width) solid var(--border-gold);
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.45);
+  animation: link-rise 0.25s ease-out;
+}
+@keyframes link-rise { from { transform: translateY(16px); } to { transform: translateY(0); } }
+.link-sheet__mark { color: var(--gold); display: flex; }
+.link-sheet__mark svg { width: 26px; height: 26px; }
+.link-sheet h2 { margin-top: 12px; }
+.link-sheet__body {
+  margin-top: 8px;
+  color: var(--text-secondary);
+  font-size: var(--fs-body-s);
+  line-height: 1.6;
+}
+.link-sheet__cta { margin-top: 20px; width: 100%; }
+.link-later {
+  margin-top: 4px;
+  padding: 10px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  font-family: var(--font-sans);
+  font-size: var(--fs-caption);
+}
+.link-later:disabled { opacity: 0.5; cursor: default; }
+
+/* 기록 화면 인라인 카드 */
+.link-card {
+  border: var(--border-width) solid var(--border-gold);
+  background: var(--surface-2);
+}
+.link-card__head { display: flex; align-items: center; gap: 8px; }
+.link-card__mark { color: var(--gold); display: flex; }
+.link-card__mark svg { width: 20px; height: 20px; }
+.link-card__body {
+  margin-top: 8px;
+  color: var(--text-secondary);
+  font-size: var(--fs-body-s);
+  line-height: 1.6;
+}
+.link-card__actions {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.link-card__actions .wl-btn { flex: 1; }
+
+/* 카카오 버튼(브랜드 컬러 #FEE500) — 여러 라우트 공용이라 전역에 둔다 */
+.kakao-btn {
+  width: 100%;
+  min-height: var(--tap-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 15px;
+  border-radius: var(--radius-button);
+  background: #fee500;
+  border: none;
+  color: #191600;
+  font-family: var(--font-sans);
+  font-size: var(--fs-body-l);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+  transition: filter var(--transition-soft);
+}
+.kakao-btn:hover:not(:disabled) { filter: brightness(0.96); }
+.kakao-btn:disabled { opacity: 0.6; cursor: default; }
+.kakao-btn__mark { width: 20px; height: 20px; flex-shrink: 0; }
+
+/* 버튼 세로 스택(카카오 위 · 구글 아래) */
+.account-ctas,
+.link-sheet__ctas,
+.link-card__ctas {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.account-ctas { margin-top: 14px; }
+.link-sheet__ctas { margin-top: 20px; }
+.link-card__ctas { margin-top: 16px; }
+.link-card__ctas .link-card__actions { margin-top: 0; }

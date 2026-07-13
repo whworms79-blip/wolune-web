@@ -2,10 +2,14 @@
 
 // 사주 용어 툴팁 — 용어에 밑줄+ⓘ, 탭하면 한 줄 설명 팝오버.
 // 모바일 우선: 탭 토글 + 바깥 탭/ESC로 닫기, 다른 용어를 열면 기존 것은 자동으로 닫힘.
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { GLOSSARY, INLINE_TERMS } from "./glossaryData";
 
 const OPEN_EVENT = "wl-glossary:open";
+
+// SSR에서 useLayoutEffect 경고를 피하면서 클라이언트에선 페인트 전에 위치 보정.
+const useIsoLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 export function GlossaryTerm({
   term,
@@ -18,8 +22,25 @@ export function GlossaryTerm({
 }) {
   const entry = GLOSSARY[term];
   const [open, setOpen] = useState(false);
+  const [shift, setShift] = useState(0);
   const id = useId();
   const ref = useRef<HTMLSpanElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const popRef = useRef<HTMLSpanElement>(null);
+
+  // 팝오버가 화면 밖으로 넘치면(overflow-x: clip에 잘림) 뷰포트 안으로 민다.
+  useIsoLayoutEffect(() => {
+    if (!open || !btnRef.current || !popRef.current) return;
+    const t = btnRef.current.getBoundingClientRect();
+    const w = popRef.current.offsetWidth; // transform 영향 없는 실제 폭
+    const centerX = t.left + t.width / 2;
+    const margin = 10;
+    let s = 0;
+    if (centerX - w / 2 < margin) s = margin - (centerX - w / 2);
+    else if (centerX + w / 2 > window.innerWidth - margin)
+      s = window.innerWidth - margin - (centerX + w / 2);
+    setShift(s);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -48,11 +69,13 @@ export function GlossaryTerm({
   return (
     <span className="gloss" ref={ref}>
       <button
+        ref={btnRef}
         type="button"
         className={triggerClassName ? `${triggerClassName} gloss__trigger` : "gloss__term"}
         aria-expanded={open}
         aria-label={`${term} 뜻 보기`}
         onClick={() => {
+          setShift(0); // 새로 열 때 보정값 초기화(정확한 측정을 위해)
           setOpen((o) => {
             const next = !o;
             if (next) window.dispatchEvent(new CustomEvent(OPEN_EVENT, { detail: id }));
@@ -64,7 +87,12 @@ export function GlossaryTerm({
         <span className="gloss__mark" aria-hidden="true">ⓘ</span>
       </button>
       {open && (
-        <span className="gloss__pop" role="tooltip">
+        <span
+          className="gloss__pop"
+          role="tooltip"
+          ref={popRef}
+          style={shift ? { transform: `translateX(calc(-50% + ${shift}px))` } : undefined}
+        >
           <span className="gloss__pop-title">
             {term}
             {entry.hanja ? <span className="gloss__hanja">{entry.hanja}</span> : null}

@@ -60,6 +60,11 @@ export interface ResultView {
     desc: string;
     tracks: { label: string; pct: number }[];
   };
+  // 대운의 흐름 타임라인(10년 단위). 현재 대운은 current=true로 강조.
+  luck: {
+    direction: string; // 역행/순행 (없으면 "")
+    pillars: { startAge: number; ko: string; ganzhi: string; current: boolean }[];
+  } | null;
   pillars: PillarCol[];
   meongsikNote: string;
 }
@@ -338,6 +343,20 @@ export function buildView(chart: EngineChart): ResultView {
     `일간은 ${reading}(${hanja}) — ${EL_NATURE[day.stem_element]} ` +
     `한자와 전문 용어는 참고용이며, 해석은 위의 사람 말 설명을 기준으로 읽어주세요.`;
 
+  // 대운의 흐름 타임라인
+  const lpAll = chart.luck_pillars;
+  const luck = lpAll?.pillars?.length
+    ? {
+        direction: lpAll.direction_ko || "",
+        pillars: lpAll.pillars.map((p) => ({
+          startAge: p.start_age,
+          ko: ganzhiKo(p.stem, p.branch),
+          ganzhi: p.stem + p.branch,
+          current: !!(cl && cl.start_age === p.start_age),
+        })),
+      }
+    : null;
+
   return {
     character: {
       name_ko: character.name_ko,
@@ -356,6 +375,7 @@ export function buildView(chart: EngineChart): ResultView {
       desc: yfDesc,
       tracks: yfTracks,
     },
+    luck,
     pillars: pillarCols,
     meongsikNote,
   };

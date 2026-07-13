@@ -77,24 +77,32 @@ export default function HomePage() {
   const [state, setState] = useState<State>({ status: "loading" });
 
   useEffect(() => {
-    const input = loadSajuInput();
-    if (!input) {
-      setState({ status: "no-input" });
-      return;
-    }
-    const now = new Date();
-    const target = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 6000);
-    fetch(chartUrl(input, { target_date: target }), { cache: "no-store", signal: controller.signal })
-      .then((r) => {
-        if (!r.ok) throw new Error("bad");
-        return r.json();
-      })
-      .then((chart: Chart) => setState({ status: "ready", chart, input }))
-      .catch(() => setState({ status: "error" }))
-      .finally(() => clearTimeout(timer));
+    let cancelled = false;
+
+    (async () => {
+      const input = await loadSajuInput();
+      if (cancelled) return;
+      if (!input) {
+        clearTimeout(timer);
+        setState({ status: "no-input" });
+        return;
+      }
+      const now = new Date();
+      const target = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+      fetch(chartUrl(input, { target_date: target }), { cache: "no-store", signal: controller.signal })
+        .then((r) => {
+          if (!r.ok) throw new Error("bad");
+          return r.json();
+        })
+        .then((chart: Chart) => { if (!cancelled) setState({ status: "ready", chart, input }); })
+        .catch(() => { if (!cancelled) setState({ status: "error" }); })
+        .finally(() => clearTimeout(timer));
+    })();
+
     return () => {
+      cancelled = true;
       clearTimeout(timer);
       controller.abort();
     };

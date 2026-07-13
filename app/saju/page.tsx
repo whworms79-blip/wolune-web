@@ -3,8 +3,13 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import DateField, { type DateValue } from "./DateField";
-import { saveSajuInput, chartQuery, type SajuInput } from "../lib/sajuInput";
-import { pad, parseTime } from "../lib/time";
+import {
+  saveSajuInput,
+  loadSajuInput,
+  chartQuery,
+  type SajuInput,
+} from "../lib/sajuInput";
+import { pad, parseTime, to12h } from "../lib/time";
 import { CITIES } from "../lib/cities";
 import "./saju.css";
 
@@ -97,6 +102,8 @@ export default function SajuInputPage() {
   const [leapMonth, setLeapMonth] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  // 저장된 사주 확인 중(폼/결과 갈림) — 확인 전엔 폼을 깜빡 보여주지 않도록.
+  const [checking, setChecking] = useState(true);
   const router = useRouter();
 
   const isLunar = calendar === "lunar";
@@ -106,6 +113,46 @@ export default function SajuInputPage() {
     setCalendar(next);
     if (next === "solar") setLeapMonth(false);
   }
+
+  // 사주 탭 진입 처리(앱과 동일):
+  // - 저장된 사주가 있고 편집(?edit=1)이 아니면 → 결과 뷰(/saju/result)로 이동(내 사주 바로 표시)
+  // - 편집 모드면 → 저장값으로 폼을 채워 수정 가능하게
+  // - 저장된 사주가 없으면(신규) → 빈 입력 폼
+  useEffect(() => {
+    let cancelled = false;
+    const editMode =
+      new URLSearchParams(window.location.search).get("edit") === "1";
+    (async () => {
+      const saved = await loadSajuInput();
+      if (cancelled) return;
+      if (saved && !editMode) {
+        router.replace(`/saju/result?${chartQuery(saved).toString()}`);
+        return; // 폼 대신 결과로 — checking 유지(스피너)
+      }
+      if (saved) {
+        // 편집 모드: 저장값으로 폼 채우기
+        const m = saved.date.match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
+        if (m) {
+          setBirth({ year: +m[1], month: +m[2], day: +m[3] });
+          setDateChosen(true);
+        }
+        if (saved.time) {
+          setBirthTime(to12h(saved.time) || saved.time);
+          setUnknownTime(false);
+        } else {
+          setUnknownTime(true);
+        }
+        if (saved.city) setBirthPlace(saved.city);
+        setGender(saved.gender === "male" ? "남성" : "여성");
+        setCalendar(saved.calendar);
+        setLeapMonth(!!saved.is_leap_month);
+      }
+      setChecking(false); // 폼 표시(신규 또는 편집)
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
 
   // 모달 ESC 닫기
   useEffect(() => {
@@ -118,7 +165,7 @@ export default function SajuInputPage() {
   }, [modalOpen]);
 
   // 입력값을 엔진 형식으로 변환 → /saju/result로 이동(결과 페이지가 서버에서 엔진 호출)
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
     // 생년월일을 실제로 고르지 않았으면 제출 차단(예시값이 그대로 저장되는 것을 방지)
@@ -138,8 +185,19 @@ export default function SajuInputPage() {
       is_leap_month: isLunar && leapMonth ? true : undefined,
     };
 
-    saveSajuInput(input); // 홈(/home)에서 매번 재입력 없이 불러오도록 저장
+    await saveSajuInput(input); // 홈(/home)에서 매번 재입력 없이 불러오도록 저장
     router.push(`/saju/result?${chartQuery(input).toString()}`);
+  }
+
+  // 저장 사주 확인 중(신규는 폼, 기존은 결과로 이동) — 잠깐 로딩만 표시.
+  if (checking) {
+    return (
+      <main className="screen">
+        <div className="screen__scroll saju-checking">
+          <span className="saju-checking__ring" aria-label="불러오는 중" />
+        </div>
+      </main>
+    );
   }
 
   return (
@@ -325,12 +383,12 @@ export default function SajuInputPage() {
           </div>
 
           {/* CTA — 누르면 입력값으로 /saju/result 이동(서버가 엔진 호출) */}
-          <div className="cta">
+          <div className="saju-cta">
             <button type="submit" className="wl-btn wl-btn--primary wl-btn--moonlit" disabled={busy}>
               <MoonIcon /> {busy ? "계산하는 중…" : "내 사주 보기"}
             </button>
             {showDateHint && (
-              <p className="cta__note" role="alert">먼저 생년월일을 선택해 주세요.</p>
+              <p className="saju-cta__note" role="alert">먼저 생년월일을 선택해 주세요.</p>
             )}
           </div>
         </form>

@@ -9,6 +9,15 @@ import {
   type SajuInput,
 } from "../lib/sajuInput";
 import { clearMoodJournal } from "../lib/moodJournal";
+import {
+  currentEmail,
+  currentName,
+  isAnonymous,
+  linkGoogle,
+  onAuthChange,
+  signOutToAnon,
+} from "../lib/firebase";
+import { KakaoButton } from "../lib/LinkAccount";
 import "./my.css";
 
 const APP_VERSION = "0.1.0";
@@ -45,8 +54,6 @@ const User = () => (<svg viewBox="0 0 24 24" {...ico}><circle cx="12" cy="8" r="
 const CheckCircle = () => (<svg viewBox="0 0 24 24" {...ico}><circle cx="12" cy="12" r="9" /><path d="M8.5 12l2.4 2.4 4.6-4.8" /></svg>);
 const InfoIcon = () => (<svg viewBox="0 0 24 24" {...ico}><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></svg>);
 const Bell = () => (<svg viewBox="0 0 24 24" {...ico}><path d="M18 9a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6" /><path d="M10.5 20a2 2 0 0 0 3 0" /></svg>);
-const UserPlus = () => (<svg viewBox="0 0 24 24" {...ico}><circle cx="9" cy="8" r="4" /><path d="M3 20a6 6 0 0 1 12 0M18 8v6M15 11h6" /></svg>);
-const Cloud = () => (<svg viewBox="0 0 24 24" {...ico}><path d="M7 18a4 4 0 0 1 0-8 5 5 0 0 1 9.6-1.5A3.5 3.5 0 0 1 18 18Z" /></svg>);
 const Trash = () => (<svg viewBox="0 0 24 24" {...ico}><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13" /></svg>);
 const Shield = () => (<svg viewBox="0 0 24 24" {...ico}><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z" /></svg>);
 const Pencil = () => (<svg viewBox="0 0 24 24" {...ico}><path d="M4 20h4L18 10l-4-4L4 16v4Z" /><path d="M13.5 6.5l4 4" /></svg>);
@@ -81,34 +88,88 @@ export default function MyPage() {
   const [ready, setReady] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [toast, setToast] = useState("");
+  // 로그인 상태
+  const [signedIn, setSignedIn] = useState(false);
+  const [account, setAccount] = useState<{ name: string | null; email: string | null }>({
+    name: null,
+    email: null,
+  });
+  const [linking, setLinking] = useState(false);
+
+  // 인증 상태 변화 구독(로그인/로그아웃 시 UI 갱신)
+  useEffect(() => {
+    return onAuthChange(() => {
+      setSignedIn(!isAnonymous());
+      setAccount({ name: currentName(), email: currentEmail() });
+    });
+  }, []);
+
+  async function handleGoogle() {
+    if (linking) return;
+    setLinking(true);
+    const r = await linkGoogle();
+    setLinking(false);
+    setSignedIn(!isAnonymous());
+    setAccount({ name: currentName(), email: currentEmail() });
+    if (r === "linked") {
+      setToast("구글 계정과 연결됐어요. 이제 기기를 바꿔도 그대로예요.");
+    } else if (r === "switchedToExisting") {
+      setToast("기존 구글 계정으로 로그인했어요.");
+    } else if (r === "failed") {
+      setToast("로그인에 실패했어요. 잠시 후 다시 시도해 주세요.");
+    } else {
+      return; // 취소는 조용히
+    }
+    window.setTimeout(() => setToast(""), 2600);
+  }
+
+  async function handleSignOut() {
+    await signOutToAnon(); // 로그아웃 → 새 익명 계정(사주·기록 없음)
+    setSignedIn(false);
+    setAccount({ name: null, email: null });
+    setToast("로그아웃했어요.");
+    // 화면이 이전 계정의 사주를 메모리에 들고 있으므로 랜딩으로 완전히 리셋한다.
+    // (안 그러면 로그아웃했는데도 이전 사주가 계속 보인다)
+    window.setTimeout(() => {
+      window.location.href = "/";
+    }, 900);
+  }
 
   useEffect(() => {
-    const saved = loadSajuInput();
-    setInput(saved);
-    setReady(true);
-    if (!saved) return;
-
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 6000);
-    fetch(chartUrl(saved), { cache: "no-store", signal: controller.signal })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((c: Chart | null) => setChart(c))
-      .catch(() => setChart(null))
-      .finally(() => clearTimeout(timer));
+    let cancelled = false;
+
+    (async () => {
+      const saved = await loadSajuInput();
+      if (cancelled) return;
+      setInput(saved);
+      setReady(true);
+      if (!saved) {
+        clearTimeout(timer);
+        return;
+      }
+      fetch(chartUrl(saved), { cache: "no-store", signal: controller.signal })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((c: Chart | null) => { if (!cancelled) setChart(c); })
+        .catch(() => { if (!cancelled) setChart(null); })
+        .finally(() => clearTimeout(timer));
+    })();
+
     return () => {
+      cancelled = true;
       clearTimeout(timer);
       controller.abort();
     };
   }, []);
 
-  function handleReset() {
-    clearSajuInput();
-    clearMoodJournal();
+  async function handleReset() {
     setInput(null);
     setChart(null);
     setConfirmOpen(false);
     setToast("내 데이터를 모두 초기화했어요");
     window.setTimeout(() => setToast(""), 2400);
+    await Promise.all([clearSajuInput(), clearMoodJournal()]);
   }
 
   const character = chart?.character;
@@ -186,7 +247,7 @@ export default function MyPage() {
                       </div>
                     )}
                   </div>
-                  <Link className="wl-btn wl-btn--primary info-edit" href="/saju">
+                  <Link className="wl-btn wl-btn--primary info-edit" href="/saju?edit=1">
                     <Pencil /> 수정하기
                   </Link>
                 </>
@@ -228,31 +289,62 @@ export default function MyPage() {
             <p className="wl-caption accuracy__version">만세력 엔진 v{engineVer}</p>
           </section>
 
-          {/* 곧 만나요 (백엔드 준비 중) */}
+          {/* 계정 */}
+          <div>
+            <span className="wl-section-label section-label">계정</span>
+            <section className="wl-card account-card">
+              {signedIn ? (
+                <div className="account-signed">
+                  <span className="account-avatar" aria-hidden="true"><CheckCircle /></span>
+                  <span className="account-info">
+                    <span className="account-name">{account.name || account.email || "구글 계정"}</span>
+                    {account.email && account.email !== account.name && (
+                      <span className="account-email">{account.email}</span>
+                    )}
+                  </span>
+                  <button type="button" className="account-signout" onClick={handleSignOut}>
+                    로그아웃
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <span className="account-title">로그인하고 안전하게 보관하기</span>
+                  <span className="account-desc">
+                    카카오·구글 계정과 연결하면 기기를 바꾸거나 브라우저가 달라져도 사주와 기록이 그대로 남아요.
+                  </span>
+                  {/* 한국 사용자 1순위 — 카카오를 위에 */}
+                  <div className="account-ctas">
+                    <KakaoButton disabled={linking} />
+                    <button
+                      type="button"
+                      className="google-btn"
+                      onClick={handleGoogle}
+                      disabled={linking}
+                    >
+                      {linking ? (
+                        "연결 중…"
+                      ) : (
+                        <>
+                          <span className="google-g" aria-hidden="true">G</span>
+                          구글로 계속하기
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </>
+              )}
+            </section>
+          </div>
+
+          {/* 곧 만나요 */}
           <div>
             <span className="wl-section-label section-label">곧 만나요</span>
             <section className="wl-card settings">
-              <div className="setting-row setting-row--soon">
-                <span className="setting-row__icon" aria-hidden="true"><UserPlus /></span>
-                <span className="setting-row__label">
-                  <span className="setting-row__title">로그인 · 계정 연결</span>
-                  <span className="setting-row__desc">기기를 바꿔도 내 사주를 그대로</span>
-                </span>
-                <span className="soon-badge">준비 중</span>
-              </div>
               <div className="setting-row setting-row--soon">
                 <span className="setting-row__icon" aria-hidden="true"><Bell /></span>
                 <span className="setting-row__label">
                   <span className="setting-row__title">푸시 알림</span>
                   <span className="setting-row__desc">오늘의 감정 날씨를 살며시</span>
-                </span>
-                <span className="soon-badge">준비 중</span>
-              </div>
-              <div className="setting-row setting-row--soon">
-                <span className="setting-row__icon" aria-hidden="true"><Cloud /></span>
-                <span className="setting-row__label">
-                  <span className="setting-row__title">클라우드 동기화</span>
-                  <span className="setting-row__desc">기록을 안전하게 백업</span>
                 </span>
                 <span className="soon-badge">준비 중</span>
               </div>
@@ -281,7 +373,7 @@ export default function MyPage() {
         </div>
 
         <p className="wl-caption privacy-note">
-          <Shield /> 내 데이터는 이 기기에만 저장되며, 언제든 초기화할 수 있어요.
+          <Shield /> 내 데이터는 안전하게 클라우드에 보관되며, 언제든 초기화할 수 있어요.
         </p>
       </div>
 

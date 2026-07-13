@@ -269,3 +269,34 @@
 .gloss__pop-title { font-size: 13px; font-weight: 600; color: var(--gold); }
 .gloss__hanja { margin-left: 5px; font-weight: 400; font-size: 12px; color: var(--text-tertiary); }
 .gloss__pop-body { font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+
+/* 대운의 흐름 타임라인(10년 단위, 현재 대운 골드 강조) — 앱과 동일 */
+.luck__label { display: block; margin-bottom: 12px; }
+.luck__track {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.luck__track::-webkit-scrollbar { display: none; }
+.luck__col {
+  flex: 0 0 auto;
+  min-width: 62px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 10px;
+  border-radius: 12px;
+  background: var(--surface-1b);
+  border: 1px solid var(--border-soft);
+}
+.luck__col--current {
+  border-color: var(--gold);
+  background: var(--surface-2);
+}
+.luck__age { font-size: 12px; color: var(--text-tertiary); }
+.luck__col--current .luck__age { color: var(--gold); }
+.luck__ko { font-size: 16px; color: var(--text-primary); font-weight: var(--fw-medium); }
+.luck__hanja { font-size: 12px; color: var(--text-tertiary); }

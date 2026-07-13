@@ -1,5 +1,9 @@
-// 사주 입력값의 브라우저 저장 + 엔진 URL 빌드 (홈에서 재사용).
-// /saju 계산 시 저장 → /home에서 매번 생일 재입력 없이 불러오기.
+// 사주 입력값의 클라우드 저장(Firestore: users/{uid}.sajuInput) + 엔진 URL 빌드.
+// /saju 계산 시 저장 → /home·/journal 등에서 매번 재입력 없이 불러오기.
+// 익명 계정으로도 저장되어 기기·브라우저가 바뀌어도 유지된다. 앱(Flutter)과 동일 스키마.
+
+import { doc, getDoc, setDoc, deleteField } from "firebase/firestore";
+import { db, ensureSignedIn } from "./firebase";
 
 export interface SajuInput {
   date: string; // YYYY-MM-DD
@@ -12,27 +16,33 @@ export interface SajuInput {
 
 export const SAJU_STORAGE_KEY = "wolune_saju_input";
 
-export function saveSajuInput(input: SajuInput): void {
+export async function saveSajuInput(input: SajuInput): Promise<void> {
   try {
-    localStorage.setItem(SAJU_STORAGE_KEY, JSON.stringify(input));
+    const uid = await ensureSignedIn();
+    await setDoc(doc(db, "users", uid), { sajuInput: input }, { merge: true });
   } catch {
-    /* 저장 불가(프라이빗 모드 등) — 무시 */
+    /* 저장 실패 — 무시(오프라인 캐시가 이후 동기화) */
   }
 }
 
-export function clearSajuInput(): void {
+export async function clearSajuInput(): Promise<void> {
   try {
-    localStorage.removeItem(SAJU_STORAGE_KEY);
+    const uid = await ensureSignedIn();
+    await setDoc(
+      doc(db, "users", uid),
+      { sajuInput: deleteField() },
+      { merge: true },
+    );
   } catch {
-    /* 삭제 불가 — 무시 */
+    /* 무시 */
   }
 }
 
-export function loadSajuInput(): SajuInput | null {
+export async function loadSajuInput(): Promise<SajuInput | null> {
   try {
-    const raw = localStorage.getItem(SAJU_STORAGE_KEY);
-    if (!raw) return null;
-    const v = JSON.parse(raw) as SajuInput;
+    const uid = await ensureSignedIn();
+    const snap = await getDoc(doc(db, "users", uid));
+    const v = snap.data()?.sajuInput as SajuInput | undefined;
     return v && v.date ? v : null;
   } catch {
     return null;

@@ -7,9 +7,9 @@ import {
   getMoodEntry,
   saveMoodEntry,
   listMoodEntries,
-  moodStreak,
   type MoodEntry,
 } from "../lib/moodJournal";
+import { LinkAccountCard, shouldShowJournalCard } from "../lib/LinkAccount";
 import { pad } from "../lib/time";
 import "./journal.css";
 
@@ -98,39 +98,53 @@ export default function JournalPage() {
   const [note, setNote] = useState("");
   const [saved, setSaved] = useState(false);
   const [entries, setEntries] = useState<MoodEntry[]>([]);
+  const [showLinkCard, setShowLinkCard] = useState(false);
 
   useEffect(() => {
     const now = new Date();
     const t = dateKey(now);
     setToday(t);
 
-    const inp = loadSajuInput();
-    if (!inp) {
-      setStatus("no-saju");
-      return;
-    }
-    setInput(inp);
-
-    const existing = getMoodEntry(t);
-    if (existing) {
-      setMood(existing.mood);
-      setTags(existing.tags);
-      setNote(existing.note);
-      setExisted(true);
-    }
-    setEntries(listMoodEntries());
-
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 6000);
-    fetch(chartUrl(inp, { target_date: t }), { cache: "no-store", signal: controller.signal })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((c: Chart | null) => setChart(c))
-      .catch(() => setChart(null))
-      .finally(() => {
+    let cancelled = false;
+
+    (async () => {
+      const inp = await loadSajuInput();
+      if (cancelled) return;
+      if (!inp) {
         clearTimeout(timer);
-        setStatus("ready");
-      });
+        setStatus("no-saju");
+        return;
+      }
+      setInput(inp);
+
+      const existing = await getMoodEntry(t);
+      if (cancelled) return;
+      if (existing) {
+        setMood(existing.mood);
+        setTags(existing.tags);
+        setNote(existing.note);
+        setExisted(true);
+      }
+      const list = await listMoodEntries();
+      if (cancelled) return;
+      setEntries(list);
+      // 기록이 쌓였는데 아직 익명 → 계정 연결 유도 카드
+      setShowLinkCard(shouldShowJournalCard(list.length));
+
+      fetch(chartUrl(inp, { target_date: t }), { cache: "no-store", signal: controller.signal })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((c: Chart | null) => { if (!cancelled) setChart(c); })
+        .catch(() => { if (!cancelled) setChart(null); })
+        .finally(() => {
+          clearTimeout(timer);
+          if (!cancelled) setStatus("ready");
+        });
+    })();
+
     return () => {
+      cancelled = true;
       clearTimeout(timer);
       controller.abort();
     };
@@ -141,7 +155,7 @@ export default function JournalPage() {
     setTags((prev) => (prev.includes(tag) ? prev.filter((x) => x !== tag) : [...prev, tag]));
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (mood === 0) return;
     const df = chart?.daily_fortune;
     const entry: MoodEntry = {
@@ -154,10 +168,12 @@ export default function JournalPage() {
         : undefined,
       updatedAt: new Date().toISOString(),
     };
-    saveMoodEntry(entry);
-    setEntries(listMoodEntries());
     setExisted(true);
     setSaved(true);
+    await saveMoodEntry(entry);
+    const list = await listMoodEntries();
+    setEntries(list);
+    setShowLinkCard(shouldShowJournalCard(list.length)); // 방금 저장으로 기준을 넘겼을 수 있다
   }
 
   // ── 로딩 ──
@@ -199,7 +215,18 @@ export default function JournalPage() {
   const resultHref = input ? `/saju/result?${chartQuery(input).toString()}` : "/saju";
   const entryMap = Object.fromEntries(entries.map((e) => [e.date, e]));
   const week = weekKeys(today);
-  const streak = moodStreak(today);
+  // 오늘까지 연속 기록 일수(streak) — 이미 불러온 entries로 계산.
+  const streak = (() => {
+    const dates = new Set(entries.map((e) => e.date));
+    let n = 0;
+    const d = new Date(`${today}T00:00:00`);
+    if (today && !dates.has(today)) d.setDate(d.getDate() - 1);
+    while (dates.has(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`)) {
+      n += 1;
+      d.setDate(d.getDate() - 1);
+    }
+    return n;
+  })();
   const progress = Math.min(100, Math.round((Math.min(streak, 10) / 10) * 100));
 
   return (
@@ -337,6 +364,16 @@ export default function JournalPage() {
             </div>
           </section>
         </div>
+
+        {/* 기록이 쌓였는데 익명 → 계정 연결 유도(닫으면 다시 안 뜸) */}
+        {showLinkCard && (
+          <div className="section-gap">
+            <LinkAccountCard
+              days={entries.length}
+              onDone={() => setShowLinkCard(false)}
+            />
+          </div>
+        )}
 
         {/* 지난 기록 */}
         <div className="section-gap">

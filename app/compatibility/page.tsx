@@ -273,11 +273,16 @@ export default function CompatibilityPage() {
 
   // 저장된 내 사주가 있으면 '나' 자동 채움 + 사주 탭 링크 준비
   useEffect(() => {
-    const saved = loadSajuInput();
-    if (saved) {
+    let cancelled = false;
+    (async () => {
+      const saved = await loadSajuInput();
+      if (cancelled || !saved) return;
       setMe(fromSaved(saved));
       setSavedHref(`/saju/result?${chartQuery(saved).toString()}`);
-    }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -287,7 +292,7 @@ export default function CompatibilityPage() {
 
     const inA = toInput(me);
     const inB = toInput(you);
-    saveSajuInput(inA); // 내 정보는 저장 → 다음 방문 자동 채움
+    void saveSajuInput(inA); // 내 정보는 저장 → 다음 방문 자동 채움(백그라운드)
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 7000);

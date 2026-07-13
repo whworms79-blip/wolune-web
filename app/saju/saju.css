@@ -257,21 +257,19 @@
 .privacy__icon { flex-shrink: 0; color: var(--lavender); margin-top: 1px; }
 .privacy__icon svg { width: 18px; height: 18px; }
 
-/* CTA — 여기서 .cta 는 버튼을 감싸는 래퍼일 뿐.
-   전역 .cta(골드 배경 + box-shadow 후광)가 새어 버튼 뒤 빛 번짐을 만들어서 전부 리셋.
-   실제 골드/글자/움직임은 버튼(.wl-btn--moonlit)이 담당한다. */
-.cta {
+/* CTA 래퍼 — 버튼을 감싸는 블록일 뿐(실제 골드/글자는 .wl-btn--moonlit 담당).
+   ⚠️ 이름을 .cta 로 두면 랜딩(globals.css)의 골드 버튼 .cta 와 충돌한다:
+   App Router는 방문한 라우트의 CSS를 문서에 남기므로, /saju 를 거친 뒤 랜딩으로
+   돌아가면 이 규칙이 랜딩 버튼의 배경·그림자를 지워버린다. → 고유 이름으로 분리. */
+.saju-cta {
   display: block;
   width: 100%;
   margin-top: 36px;
   padding: 0 0 env(safe-area-inset-bottom);
-  background: none;
-  box-shadow: none;
-  border-radius: 0;
 }
 
 /* 엔진 미연결 안내(임시) */
-.cta__note {
+.saju-cta__note {
   margin-top: 10px;
   text-align: center;
   color: var(--text-tertiary);
@@ -366,4 +364,23 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .sijin-modal__card { animation: none; }
+}
+
+/* 저장 사주 확인 중 로딩(신규→폼 / 기존→결과) */
+.saju-checking {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.saju-checking__ring {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid var(--border-soft);
+  border-top-color: var(--gold);
+  animation: saju-checking-spin 0.8s linear infinite;
+}
+@keyframes saju-checking-spin {
+  to { transform: rotate(360deg); }
 }

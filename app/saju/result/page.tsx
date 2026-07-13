@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { buildView, isCompleteChart, type EngineChart } from "./chart";
 import { GlossaryText, GlossaryTerm } from "./Glossary";
+import { LinkResultPrompt } from "../../lib/LinkAccount";
 import "./result.css";
 
 // 엔진 주소(기본 로컬). 서버→엔진 호출이라 CORS 무관.
@@ -79,7 +80,7 @@ function Screen({ children }: { children: React.ReactNode }) {
   return (
     <main className="screen">
       <header className="topbar">
-        <Link className="topbar__back" href="/saju" aria-label="뒤로"><ChevronLeft /></Link>
+        <Link className="topbar__back" href="/saju?edit=1" aria-label="수정"><ChevronLeft /></Link>
         <h1 className="wl-heading">내 사주</h1>
       </header>
       {children}
@@ -94,7 +95,7 @@ function FallbackState({ title, body }: { title: string; body: string }) {
         <span className="result-fallback__mark" aria-hidden="true"><Moon /></span>
         <h2 className="wl-title-m">{title}</h2>
         <p className="wl-body wl-text-secondary">{body}</p>
-        <Link className="wl-btn wl-btn--primary result-fallback__cta" href="/saju">
+        <Link className="wl-btn wl-btn--primary result-fallback__cta" href="/saju?edit=1">
           생년월일 입력하러 가기
         </Link>
       </div>
@@ -135,6 +136,8 @@ export default async function SajuResultPage({
 
   return (
     <Screen>
+      {/* 사주를 처음 본 "감동의 순간" 직후에만 계정 연결을 권한다(익명·1회) */}
+      <LinkResultPrompt />
       <div className="screen__scroll">
         <div className="wl-card-list">
           {/* 1. 캐릭터 요약 */}
@@ -210,6 +213,27 @@ export default async function SajuResultPage({
               </div>
             ))}
           </section>
+
+          {/* 3-1. 대운의 흐름 타임라인 (10년 단위) */}
+          {v.luck && (
+            <section className="wl-card luck" aria-label="대운의 흐름">
+              <span className="wl-section-label luck__label">
+                대운의 흐름{v.luck.direction ? ` · ${v.luck.direction}` : ""}
+              </span>
+              <div className="luck__track">
+                {v.luck.pillars.map((p) => (
+                  <div
+                    key={p.startAge}
+                    className={`luck__col${p.current ? " luck__col--current" : ""}`}
+                  >
+                    <span className="luck__age">{p.startAge}세</span>
+                    <span className="luck__ko">{p.ko}</span>
+                    <span className="luck__hanja">{p.ganzhi}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           <div className="wl-reflection">{v.reflectLuck}</div>
 

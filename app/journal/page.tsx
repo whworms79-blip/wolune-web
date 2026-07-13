@@ -10,6 +10,12 @@ import {
   type MoodEntry,
 } from "../lib/moodJournal";
 import { LinkAccountCard, shouldShowJournalCard } from "../lib/LinkAccount";
+import {
+  fetchInsight,
+  insightEntries,
+  INSIGHT_THRESHOLD,
+  type Insight,
+} from "../lib/insight";
 import { pad } from "../lib/time";
 import { useConsent } from "../lib/ConsentGate";
 import "./journal.css";
@@ -46,6 +52,9 @@ function MoodFace({ level }: { level: number }) {
 }
 
 /* ---------- 상수 ---------- */
+/// 통찰 안내(1회)를 이미 봤는가 — 기기 로컬로 충분하다.
+const INSIGHT_NOTICE_KEY = "wl_insight_notice_seen_v1";
+
 const MOOD_LABEL = ["많이 가라앉음", "조금 가라앉음", "평온", "좋음", "아주 좋음"];
 const MOOD_COLOR = ["#6e9bc9", "#8a86c4", "#c9b6f0", "#6fb98f", "#e8c06a"];
 const EMOTION_TAGS = ["평온", "설렘", "불안", "지침", "감사", "피곤", "외로움", "벅참"];
@@ -100,6 +109,10 @@ export default function JournalPage() {
   const [note, setNote] = useState("");
   const [saved, setSaved] = useState(false);
   const [entries, setEntries] = useState<MoodEntry[]>([]);
+  // 통찰은 엔진(POST /v1/insight)이 계산한다 → 비동기. 받기 전엔 잠긴 상태로 그린다.
+  const [insight, setInsight] = useState<Insight | null>(null);
+  // 통찰이 처음 열릴 때 "계산은 서버에서, 메모는 안 보냄"을 한 번만 알린다.
+  const [notice, setNotice] = useState(false);
   const [showLinkCard, setShowLinkCard] = useState(false);
 
   useEffect(() => {
@@ -181,6 +194,25 @@ export default function JournalPage() {
     setShowLinkCard(shouldShowJournalCard(list.length)); // 방금 저장으로 기준을 넘겼을 수 있다
   }
 
+  // 통찰 — 기록이 바뀔 때마다(최초 로드·저장 후) 엔진에 다시 묻는다.
+  // 임계 미만이면 fetchInsight 가 엔진을 부르지도 않는다(무드를 내보낼 이유가 없다).
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const got = await fetchInsight(entries);
+      if (!alive) return;
+      setInsight(got);
+      // 통찰이 처음 열리는 순간, 계산이 어디서 이뤄지는지 한 번만 담백하게 알린다.
+      if (got.unlocked && localStorage.getItem(INSIGHT_NOTICE_KEY) !== "1") {
+        localStorage.setItem(INSIGHT_NOTICE_KEY, "1");
+        setNotice(true);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [entries]);
+
   // ── 로딩 ──
   if (status === "loading") {
     return (
@@ -232,7 +264,17 @@ export default function JournalPage() {
     }
     return n;
   })();
-  const progress = Math.min(100, Math.round((Math.min(streak, 10) / 10) * 100));
+  // 통찰 진척은 **연속일이 아니라 기록 수** 기준이다.
+  // 통계가 필요로 하는 건 연속성이 아니라 표본 수이고, 하루 빠뜨렸다고 진척이 0으로
+  // 돌아가는 건 무드저널에서 특히 가혹하다. streak 는 위에 '몇 일째 기록 중'으로 남긴다.
+  const insightCount = insight?.count ?? insightEntries(entries).length;
+  const insightNeeded = insight?.needed ?? INSIGHT_THRESHOLD;
+  const insightRemaining = Math.max(0, insightNeeded - insightCount);
+  const progress = Math.min(
+    100,
+    Math.round((Math.min(insightCount, insightNeeded) / insightNeeded) * 100),
+  );
+  const unlocked = insight?.unlocked ?? false;
 
   return (
     <main className="screen">
@@ -336,20 +378,47 @@ export default function JournalPage() {
             )}
           </section>
 
-          {/* 당신만의 패턴 */}
-          <section className="wl-card" aria-labelledby="pattern-label">
+          {/* 당신만의 패턴 (B3 개인화 통찰 — 계산은 엔진) */}
+          <section
+            className={`wl-card${unlocked ? " wl-card--lavender" : ""}`}
+            aria-labelledby="pattern-label"
+          >
             <div className="pattern__head">
-              <span className="wl-section-label" id="pattern-label">당신만의 패턴</span>
-              <span className="wl-body-s wl-text-gold">{streak > 0 ? `${streak}일째 기록 중` : "오늘부터 시작해요"}</span>
+              <span className="wl-section-label" id="pattern-label">
+                {unlocked ? "당신만의 패턴" : "당신만의 패턴을 그리는 중"}
+              </span>
+              <span className="wl-body-s wl-text-gold">
+                {streak > 0 ? `${streak}일째 기록 중` : "오늘부터 시작해요"}
+              </span>
             </div>
-            <div className="wl-progress pattern__progress">
-              <div className="wl-progress__fill" style={{ width: `${progress}%` }} />
-            </div>
-            <p className="wl-body-s wl-text-secondary">
-              {streak >= 10
-                ? "꾸준한 기록이 당신만의 감정 지도를 그리고 있어요."
-                : `${10 - Math.min(streak, 10)}일 더 기록하면 당신의 첫 감정 패턴이 보여요.`}
-            </p>
+
+            {unlocked ? (
+              <>
+                <p className="wl-body">{insight!.headline}</p>
+                {insight!.support && (
+                  <p className="wl-body-s wl-text-tertiary pattern__support">
+                    {insight!.support}
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="wl-progress pattern__progress">
+                  <div className="wl-progress__fill" style={{ width: `${progress}%` }} />
+                </div>
+                <p className="wl-body-s wl-text-secondary">
+                  {`${insightRemaining}개 더 기록하면 당신의 첫 감정 패턴이 보여요.`}
+                </p>
+              </>
+            )}
+
+            {notice && (
+              // 변명이 아니라 약속이다 — 담백하게 한 줄, 한 번만.
+              <p className="wl-body-s wl-text-tertiary pattern__notice">
+                패턴은 계산 서버에서 찾아요. 기분 점수만 보내고 적어두신 메모는 보내지
+                않아요 — 저장도 하지 않고요.
+              </p>
+            )}
 
             <div className="week" role="img" aria-label="이번 주 기록">
               {week.map((key, i) => {

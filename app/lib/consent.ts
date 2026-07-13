@@ -4,8 +4,20 @@
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db, ensureSignedIn } from "./firebase";
 
-// 방침이 바뀌면 이 값을 올리고, 저장된 version 과 비교해 재동의를 받는다.
-export const CONSENT_VERSION = "2026-07-13";
+// 현재 방침 버전 — 새로 동의를 받을 때 이 값이 기록된다. 방침이 바뀌면 올린다.
+export const CONSENT_VERSION = "2026-07-14";
+
+// **재동의를 요구하는 최소 버전.** 이 값보다 오래된 동의만 다시 받는다.
+//
+// 버전이 바뀔 때마다 무조건 재동의를 받으면, 사용자에게 **유리한 변경**(수집 축소)에도
+// 동의 시트가 튀어나온다. 2026-07-14 개정이 정확히 그랬다 — 무드 통찰 계산이 엔진으로
+// 옮겨가면서 (a) 기분 점수가 계산 서버로 전송되기 시작했지만, 동시에 (b) 액세스 로그에서
+// 생년월일·출생지가 사라졌고 (c) 메모·태그는 애초에 전송하지 않는다.
+//
+// 그래서 재동의 게이트는 띄우지 않는다. 대신 **조용히 넘어가지도 않는다** — 무드 기록이
+// 전에 안 가던 곳으로 가기 시작하는 건 맞으므로, 통찰이 처음 열릴 때 저널에서 한 번
+// 담백하게 알린다(journal/page.tsx 의 INSIGHT_NOTICE_KEY).
+export const REQUIRE_RECONSENT_SINCE = "2026-07-13";
 
 export interface Consent {
   privacy: boolean; // 개인정보 수집·이용 동의(필수)
@@ -29,13 +41,16 @@ export async function saveConsent(): Promise<void> {
   }
 }
 
-// 현재 방침 버전에 동의했는지. (기존 사용자 재동의 판단용 — 다음 단계에서 사용)
+// 유효한 동의가 있는지. 최신 버전일 필요는 없고, REQUIRE_RECONSENT_SINCE 이상이면 된다.
+// (버전은 YYYY-MM-DD 라 문자열 비교가 곧 날짜 비교다.)
 export async function hasCurrentConsent(): Promise<boolean> {
   try {
     const uid = await ensureSignedIn();
     const snap = await getDoc(doc(db, "users", uid));
     const c = snap.data()?.consent as Consent | undefined;
-    return !!c?.privacy && !!c?.age14 && c.version === CONSENT_VERSION;
+    return (
+      !!c?.privacy && !!c?.age14 && (c.version ?? "") >= REQUIRE_RECONSENT_SINCE
+    );
   } catch {
     return false;
   }

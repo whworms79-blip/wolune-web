@@ -14,9 +14,9 @@ export const metadata: Metadata = {
 // 문의처 — 이 상수만 바꾸면 페이지 전체(문의·권리행사 안내)에 반영된다.
 const CONTACT_EMAIL = "jhboat17@naver.com";
 const PRIVACY_OFFICER = "조재근";
-const EFFECTIVE_DATE = "2026년 7월 13일";
-// 동의 버전 — 방침이 바뀌면 올리고, 저장된 consent.version 과 비교해 재동의를 받는다.
-export const CONSENT_VERSION = "2026-07-13";
+const EFFECTIVE_DATE = "2026년 7월 14일";
+// 동의 버전(CONSENT_VERSION)은 lib/consent.ts 가 단일 출처다 — 여기서 다시 선언하지 않는다.
+// (이 페이지는 서버 컴포넌트라, firebase 를 쓰는 consent.ts 를 끌어오지 않는 게 맞다.)
 
 /* ---------- 인라인 아이콘 ---------- */
 const ico = {
@@ -221,11 +221,24 @@ export default function PrivacyPage() {
               </tr>
               <tr>
                 <td>Render</td>
-                <td>사주 계산 서버 호스팅</td>
-                <td>계산 요청 정보<span className="pv-dim"> (생년월일·시각·출생지·성별)</span></td>
+                <td>사주 계산 · 감정 패턴 계산 서버 호스팅</td>
+                <td>
+                  계산 요청 정보
+                  <span className="pv-dim">
+                    {" "}(생년월일·시각·출생지·성별, 감정 패턴을 찾을 때는 기분 점수와
+                    그날의 운세 점수)
+                  </span>
+                </td>
               </tr>
             </tbody>
           </table>
+          <p className="pv-note">
+            <strong>감정 패턴(통찰) 계산에 대해.</strong> 기록이 충분히 쌓이면, 기분과
+            그날의 기운 사이의 경향을 계산 서버에서 찾습니다. 이때 보내는 것은{" "}
+            <strong>기분 점수와 그날의 운세 점수뿐입니다.</strong> 적어두신{" "}
+            <strong>메모와 태그는 계산 서버로 보내지 않습니다.</strong> 계산 서버는 받은
+            값을 <strong>저장하지 않고</strong>, 접속 기록에도 남기지 않습니다.
+          </p>
           <p className="pv-note">
             이 회사들의 서버는 <strong>해외에 있을 수 있습니다.</strong> 서비스를 이용하시면
             위 목적 범위에서 정보가 해외로 이전될 수 있다는 점을 알려드립니다. 위탁받은 곳은

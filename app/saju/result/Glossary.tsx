@@ -64,17 +64,35 @@ export function GlossaryTerm({
   const btnRef = useRef<HTMLButtonElement>(null);
   const popRef = useRef<HTMLSpanElement>(null);
 
-  // 팝오버가 화면 밖으로 넘치면(overflow-x: clip에 잘림) 뷰포트 안으로 민다.
+  // 팝오버가 넘치면 **실제로 자르는 상자** 안으로 민다.
+  //
+  // ⚠ 예전엔 window.innerWidth(뷰포트) 기준이었는데, 팝오버를 자르는 건 뷰포트가 아니라
+  //   overflow-x 가 걸린 **가장 가까운 조상**(.screen__scroll — 가운데 정렬된 좁은 상자)이다.
+  //   화면이 넓으면 "뷰포트엔 여유가 있다"고 판단해 안 밀고, 그대로 상자 밖으로 나가 잘렸다.
+  //   좁은 모바일에선 둘이 거의 같아 증상이 안 보였다 — 넓은 화면에서만 터지는 버그였다.
   useIsoLayoutEffect(() => {
     if (!open || !btnRef.current || !popRef.current) return;
     const t = btnRef.current.getBoundingClientRect();
     const w = popRef.current.offsetWidth; // transform 영향 없는 실제 폭
     const centerX = t.left + t.width / 2;
     const margin = 10;
+
+    // 자르는 조상 찾기 — overflow-x 가 visible 이 아닌 첫 조상. 없으면 뷰포트.
+    let left = 0;
+    let right = window.innerWidth;
+    for (let n = btnRef.current.parentElement; n; n = n.parentElement) {
+      if (n === document.body || n === document.documentElement) break;
+      if (getComputedStyle(n).overflowX !== "visible") {
+        const r = n.getBoundingClientRect();
+        left = r.left;
+        right = r.right;
+        break;
+      }
+    }
+
     let s = 0;
-    if (centerX - w / 2 < margin) s = margin - (centerX - w / 2);
-    else if (centerX + w / 2 > window.innerWidth - margin)
-      s = window.innerWidth - margin - (centerX + w / 2);
+    if (centerX - w / 2 < left + margin) s = left + margin - (centerX - w / 2);
+    else if (centerX + w / 2 > right - margin) s = right - margin - (centerX + w / 2);
     setShift(s);
   }, [open]);
 

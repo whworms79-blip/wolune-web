@@ -269,7 +269,11 @@ a {
 }
 .link-card__actions .wl-btn { flex: 1; }
 
-/* 카카오 버튼(브랜드 컬러 #FEE500) — 여러 라우트 공용이라 전역에 둔다 */
+/* 카카오 로그인 버튼 — **카카오 공식 규정**. 우리 디자인 토큰을 적용하지 말 것.
+   https://developers.kakao.com/docs/ko/kakaologin/design-guide
+   컨테이너 #FEE500 / 심볼 #000 / 레이블 #000 85% / 모서리 12px.
+   ⚠ "타사 로그인 버튼을 강조하려 카카오 버튼 색을 변경"하는 것은 명시적 금지 →
+     밤하늘 톤에 맞추려면 카카오가 아니라 **우리 버튼(구글)을 낮춰야** 한다. */
 .kakao-btn {
   width: 100%;
   min-height: var(--tap-min);
@@ -278,18 +282,46 @@ a {
   justify-content: center;
   gap: 8px;
   padding: 14px 15px;
-  border-radius: var(--radius-button);
+  border-radius: 12px; /* 규정 수치 — var(--radius-button) 아님 */
   background: #fee500;
   border: none;
-  color: #191600;
+  color: rgba(0, 0, 0, 0.85); /* 규정: #000000 85% */
   font-family: var(--font-sans);
   font-size: var(--fs-body-l);
   font-weight: var(--fw-medium);
   cursor: pointer;
   transition: filter var(--transition-soft);
 }
+.kakao-btn__mark { width: 19px; height: 20px; flex: 0 0 auto; }
 .kakao-btn:hover:not(:disabled) { filter: brightness(0.96); }
 .kakao-btn:disabled { opacity: 0.6; cursor: default; }
+
+/* 구글 버튼 — 카카오와 나란히 놓이는 곳에서는 **채움을 쓰지 않는다.**
+   골드 채움 + 카카오 노랑이 서로 싸워 위계가 무너졌다. 카카오 색은 규정상 못 바꾸니
+   우리 쪽을 낮춘다. 테두리형이라 노란 버튼 하나만 시선을 끈다. */
+.google-btn {
+  width: 100%;
+  min-height: var(--tap-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 13px 15px;
+  border-radius: var(--radius-button);
+  background: transparent;
+  border: var(--border-width) solid var(--border-soft);
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body-l);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+  transition: border-color var(--transition-soft), color var(--transition-soft);
+}
+.google-btn:hover:not(:disabled) {
+  border-color: var(--border-gold);
+  color: var(--text-primary);
+}
+.google-btn:disabled { opacity: 0.6; cursor: default; }
 .kakao-btn__mark { width: 20px; height: 20px; flex-shrink: 0; }
 
 /* 버튼 세로 스택(카카오 위 · 구글 아래) */
@@ -417,31 +449,6 @@ a {
 .consent__desc { font-size: var(--fs-caption); line-height: 1.5; color: var(--text-tertiary); }
 .consent__link { color: var(--gold); text-decoration: underline; text-underline-offset: 2px; white-space: nowrap; }
 
-/* ── 랜딩: 돌아온 사용자 CTA (WelcomeCta.tsx) ──
-   로그인이 기본 경로, '새로 시작하기'는 눈에 띄지 않는 탈출구. */
-.welcome-cta { display: flex; flex-direction: column; align-items: stretch; width: 100%; }
-.welcome-cta .tagline { text-align: center; }
-.welcome-cta__intro { text-align: center; margin-bottom: 22px; }
-.welcome-cta .kakao-btn { width: 100%; margin-bottom: 10px; }
-/* .cta 는 원래 '내 사주 보기 →' 용이라 화살표를 오른쪽에 붙이는 레이아웃이다.
-   버튼으로 쓰면 글자가 왼쪽으로 쏠리므로 가운데로 되돌린다. */
-.welcome-cta__google {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
-.welcome-cta__error { margin-top: 10px; text-align: center; color: var(--rose); }
-.welcome-cta__fresh {
-  margin-top: 18px;
-  background: none;
-  border: 0;
-  color: var(--text-tertiary);
-  font-size: var(--fs-caption);
-  cursor: pointer;
-}
-.welcome-cta__fresh:hover { color: var(--text-secondary); }
 
 /* ③ 통찰 해제 카드 — 위의 통찰 카드(wl-card--lavender)와 이어지는 '축하의 연장선'.
    골드(경고 톤)가 아니라 라벤더로, 위 카드와 붙여 한 덩어리로 읽히게 한다. */

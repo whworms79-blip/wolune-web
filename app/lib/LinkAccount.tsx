@@ -16,9 +16,23 @@
 import { useEffect, useState } from "react";
 import { ensureSignedIn, isAnonymous, linkGoogle, startKakaoLogin } from "./firebase";
 
-/** 카카오 버튼(브랜드 컬러). 한국 사용자 1순위라 위에 둔다. */
+/**
+ * 카카오 로그인 버튼 — **공식 디자인 가이드를 그대로 따른다.**
+ * https://developers.kakao.com/docs/ko/kakaologin/design-guide
+ *
+ * ⚠ 여기는 우리 디자인이 아니라 **카카오의 규정**이다. 손대면 검수에서 걸린다.
+ *   · 색: 컨테이너 #FEE500 / 심볼·레이블 #000000(레이블 85% 투명도). **다른 색 금지.**
+ *     "타사 로그인 버튼을 강조하기 위해 카카오 버튼 색상을 변경"하는 것도 명시적 금지다
+ *     → 밤하늘 톤에 맞추겠다고 어둡게 바꿀 수 없다. 대신 **우리 쪽(구글 버튼)을 낮춘다.**
+ *   · 레이블: "카카오 로그인" 또는 축약형 "로그인"만. (예전에 쓰던 "카카오로 계속하기"는
+ *     규정에 없는 문구였다.)
+ *   · 심볼: 형태·비율·색상 변경 금지, 기능 아이콘으로 대체 금지, 심볼 없는 버튼 금지.
+ *     아래 path 는 카카오 공식 SDK(kakao_flutter_sdk_user/assets/images/icon_talk_login.svg)
+ *     의 것을 그대로 옮긴 것 — 직접 그린 말풍선을 쓰면 안 된다.
+ *   · 모서리: 12px.
+ */
 export function KakaoButton({
-  label = "카카오로 계속하기",
+  label = "카카오 로그인",
   disabled,
 }: {
   label?: string;
@@ -31,10 +45,16 @@ export function KakaoButton({
       onClick={() => startKakaoLogin()}
       disabled={disabled}
     >
-      <svg viewBox="0 0 24 24" aria-hidden="true" className="kakao-btn__mark">
+      {/* 카카오 공식 심볼 — 형태를 바꾸지 말 것 */}
+      <svg
+        viewBox="0 0 19 20"
+        aria-hidden="true"
+        className="kakao-btn__mark"
+        fill="none"
+      >
         <path
-          fill="currentColor"
-          d="M12 3C6.9 3 2.8 6.2 2.8 10.2c0 2.5 1.7 4.7 4.2 6l-1 3.7c-.1.3.3.6.6.4l4.4-2.9c.3 0 .7.1 1 .1 5.1 0 9.2-3.2 9.2-7.3S17.1 3 12 3z"
+          fill="#000000"
+          d="M9.5005 3.08081C13.2685 3.08091 16.3418 5.72991 16.3419 9.03952C16.3419 12.3424 13.2685 14.9915 9.5005 14.9916C9.1365 14.9916 8.77883 14.9712 8.42831 14.924L8.37397 14.9134L6.5079 16.3004C5.91032 16.7443 5.06157 16.3205 5.05732 15.5761L5.04605 13.5602L5.03147 13.549C3.36652 12.3491 2.68543 11.2233 2.65846 9.16741V9.03289C2.65846 5.72993 5.73244 3.08081 9.5005 3.08081Z"
         />
       </svg>
       {label}
@@ -112,13 +132,11 @@ const SproutMark = () => (
 
 /** 연결 버튼 두 개 + "나중에" — 세 카드가 공유한다. */
 function LinkCtas({
-  kakaoLabel,
   googleLabel,
   busy,
   onGoogle,
   onLater,
 }: {
-  kakaoLabel: string;
   googleLabel: string;
   busy: boolean;
   onGoogle: () => void;
@@ -126,11 +144,13 @@ function LinkCtas({
 }) {
   return (
     <div className="link-card__ctas">
-      <KakaoButton label={kakaoLabel} disabled={busy} />
+      {/* ★ 라벨을 넘기지 않는다 — 카카오 규정 문구("카카오 로그인")로 고정. */}
+      <KakaoButton disabled={busy} />
       <div className="link-card__actions">
+        {/* 카카오와 나란히 놓이므로 채움(골드)이 아니라 테두리형 — 노랑과 싸우지 않게. */}
         <button
           type="button"
-          className="wl-btn wl-btn--primary"
+          className="google-btn"
           onClick={onGoogle}
           disabled={busy}
         >
@@ -192,7 +212,6 @@ export function LinkResultCard() {
         사주와 앞으로의 기록이 그대로 이어져요.
       </p>
       <LinkCtas
-        kakaoLabel="카카오로 연결"
         googleLabel="구글로 연결"
         busy={busy}
         onGoogle={handleLink}
@@ -234,7 +253,6 @@ export function LinkAccountCard({
         연결해두면 기기를 바꿔도 이 기록이 그대로 이어져요.
       </p>
       <LinkCtas
-        kakaoLabel="카카오로 연결"
         googleLabel="구글로 연결"
         busy={busy}
         onGoogle={handleLink}
@@ -280,7 +298,6 @@ export function LinkInsightCard({ onDone }: { onDone: () => void }) {
         연결해두면 기기를 바꿔도 그대로 이어져요.
       </p>
       <LinkCtas
-        kakaoLabel="카카오로 연결"
         googleLabel="구글로 연결"
         busy={busy}
         onGoogle={handleLink}

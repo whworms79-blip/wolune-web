@@ -421,3 +421,12 @@
   font-size: var(--fs-body-s);
 }
 .returning-hint__error { margin-top: 8px; color: var(--rose); }
+
+/* 이 기기에서 로그인한 적이 있는 사람 — 안내를 한 톤 또렷하게.
+   웰컴에서 로그인을 뺐으므로, 돌아온 사용자를 붙잡는 지점은 여기 하나뿐이다.
+   다만 여전히 강요하지 않는다 — 그냥 입력하고 진행할 수 있다. */
+.returning-hint--known {
+  border-color: var(--border-gold);
+  background: var(--surface-2);
+}
+.returning-hint--known .returning-hint__text { color: var(--text-primary); }

@@ -147,27 +147,8 @@
 .account-card { display: flex; flex-direction: column; }
 .account-title { font-size: var(--fs-body-l); color: var(--text-primary); font-weight: var(--fw-medium); }
 .account-desc { margin-top: 6px; color: var(--text-tertiary); font-size: var(--fs-caption); line-height: 1.5; }
-.google-btn {
-  margin-top: 14px;
-  width: 100%;
-  min-height: var(--tap-min);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 13px 15px;
-  border-radius: var(--radius-button);
-  background: var(--surface-1b);
-  border: var(--border-width) solid var(--border-soft);
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  font-size: var(--fs-body-l);
-  font-weight: var(--fw-medium);
-  cursor: pointer;
-  transition: background var(--transition-soft);
-}
-.google-btn:hover:not(:disabled) { background: var(--surface-2); }
-.google-btn:disabled { opacity: 0.6; cursor: default; }
+/* .google-btn 은 globals.css 로 승격했다 — 여러 화면이 공유하고,
+   라우트 CSS 에 두면 다른 라우트로 이동한 뒤에도 남아 충돌한다(예전 .cta 사고). */
 .google-g {
   width: 20px;
   height: 20px;

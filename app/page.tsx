@@ -1,6 +1,5 @@
 // Wolune 랜딩 — 서버 컴포넌트(SSR). "use client" 없음 → 서버에서 렌더되어 SEO에 노출된다.
 import Link from "next/link";
-import { WelcomeCta } from "./WelcomeCta";
 
 // 밤하늘 별. 고정 좌표(결정적)라 SSR/CSR 하이드레이션이 어긋나지 않는다.
 const STARS = [
@@ -63,9 +62,28 @@ export default function Home() {
 
         <h1 className="wordmark">Wolune</h1>
 
-        {/* 인사말·소개·CTA — 돌아온 사용자(이 기기에서 로그인한 적 있음)에겐 다르게 보인다.
-            localStorage 를 읽어야 하므로 이 블록만 클라이언트. 나머지 랜딩은 SSR(SEO) 유지. */}
-        <WelcomeCta />
+        {/* ★ 랜딩엔 로그인 버튼을 두지 않는다. 여기는 "어서 오세요"만 하는 곳이다.
+            (돌아온 사용자용 로그인 변형을 넣었다가 뺐다 — 카카오 노랑과 골드 CTA 가 서로 싸워
+             위계가 무너졌고, 무엇보다 웰컴에서 로그인을 요구하는 건 첫인상으로 이르다.
+             돌아온 사용자를 붙잡는 진짜 지점은 **사주를 새로 입력하려는 순간**이다 →
+             app/saju/ReturningHint.tsx. wl_returning 플래그는 거기서 계속 쓴다.) */}
+        <p className="tagline">달빛처럼, 곁에서 비춰주는</p>
+        <p className="tagline-en">Your gentle guide through life&rsquo;s tides</p>
+
+        <p className="hero__intro">
+          운명을 점치지 않습니다. 어려울 때 곁에서 조용히 길을 비춰주는 동행. 달이 어둠을
+          몰아내지 않고 은은히 밝히듯, <strong>Wolune</strong>은 단정하지 않고 함께
+          들여다봅니다.
+        </p>
+
+        <Link className="cta" href="/saju">
+          내 사주 보기
+          <span className="cta__arrow" aria-hidden="true">
+            →
+          </span>
+        </Link>
+
+        <p className="footnote">생년월일만 있으면 시작할 수 있어요</p>
 
         <footer className="hero__footer">
           <Link href="/privacy">개인정보처리방침</Link>

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { buildView, isCompleteChart, type EngineChart } from "./chart";
 import { GlossaryText, GlossaryTerm, GlossaryProvider } from "./Glossary";
 import { getGlossary } from "../../lib/glossary";
-import { LinkResultPrompt } from "../../lib/LinkAccount";
+import { LinkResultCard } from "../../lib/LinkAccount";
 import "./result.css";
 
 // 엔진 주소(기본 로컬). 서버→엔진 호출이라 CORS 무관.
@@ -141,8 +141,6 @@ export default async function SajuResultPage({
   return (
     <GlossaryProvider data={glossary}>
     <Screen>
-      {/* 사주를 처음 본 "감동의 순간" 직후에만 계정 연결을 권한다(익명·1회) */}
-      <LinkResultPrompt />
       <div className="screen__scroll">
         <div className="wl-card-list">
           {/* 1. 캐릭터 요약 */}
@@ -271,6 +269,10 @@ export default async function SajuResultPage({
           )}
 
           <div className="wl-reflection">{v.reflectLuck}</div>
+
+          {/* 계정 연결 — 여기선 조용히 알리기만 한다(약한 유도).
+              진짜 유도는 통찰이 열리는 순간(저널의 LinkInsightCard). */}
+          <LinkResultCard />
 
           {/* 궁합 진입 — 결과를 나눠 사람을 데려오는 통로 */}
           <Link className="wl-btn wl-btn--rose" href="/compatibility">

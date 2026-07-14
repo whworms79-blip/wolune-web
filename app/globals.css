@@ -442,3 +442,14 @@ a {
   cursor: pointer;
 }
 .welcome-cta__fresh:hover { color: var(--text-secondary); }
+
+/* ③ 통찰 해제 카드 — 위의 통찰 카드(wl-card--lavender)와 이어지는 '축하의 연장선'.
+   골드(경고 톤)가 아니라 라벤더로, 위 카드와 붙여 한 덩어리로 읽히게 한다. */
+.link-card--insight {
+  margin-top: -6px;               /* 위 통찰 카드와 살짝 겹쳐 이어붙인다 */
+  border-color: var(--border-soft);
+  border-top-color: transparent;  /* 위 카드와 맞닿는 선은 지운다 */
+  border-radius: 0 0 var(--radius-card) var(--radius-card);
+  background: var(--surface-2);
+}
+.link-card--insight .link-card__mark { color: var(--lavender); }

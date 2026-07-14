@@ -6,6 +6,7 @@
 
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { markSignedIn } from "./returning";
+import { saveLinkedProvider } from "./linkedProvider";
 import {
   getAuth,
   GoogleAuthProvider,
@@ -18,7 +19,7 @@ import {
   signOut,
   type User,
 } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, initializeFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyD4h68ksYoQS-uU4hwC-tkoZ9SAen9jbeQ",
@@ -32,7 +33,27 @@ const firebaseConfig = {
 
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+// ⚠️ ignoreUndefinedProperties 는 선택이 아니라 **필수**다.
+//
+// SajuInput 의 time·city·is_leap_month, MoodEntry 의 fortune 은 전부 옵셔널이라
+// 값이 없으면 `undefined` 가 된다. Firestore 는 기본 설정에서 undefined 를 만나면
+// setDoc 자체를 throw 한다 — "Unsupported field value: undefined".
+//
+// 그래서 **양력 사용자(대다수)는 사주가 아예 저장되지 않고 있었다.**
+// is_leap_month 가 undefined → setDoc throw → 저장 함수의 catch 가 조용히 삼킴
+// → 홈·저널·마이가 "사주 없음"으로 보이고 크로스 디바이스 동기화도 되지 않았다.
+// (localStorage 시절엔 JSON.stringify 가 undefined 키를 알아서 버려서 안 드러났다.)
+//
+// 옵셔널 필드를 "없음"으로 두는 건 정상적인 표현이므로, 저장 계층에서 undefined 를
+// 조용히 빼도록 한다. 앱(Dart)은 null 을 쓰므로 이 문제가 없다(웹 전용).
+let _db;
+try {
+  _db = initializeFirestore(app, { ignoreUndefinedProperties: true });
+} catch {
+  // 이미 초기화됐다면(핫리로드 등) 기존 인스턴스를 그대로 쓴다.
+  _db = getFirestore(app);
+}
+export const db = _db;
 
 let signInPromise: Promise<string> | null = null;
 
@@ -84,6 +105,7 @@ export async function linkGoogle(): Promise<GoogleLinkResult> {
       try {
         await linkWithPopup(current, provider);
         markSignedIn("google");
+        void saveLinkedProvider("google");
         return "linked";
       } catch (e) {
         const code = (e as { code?: string })?.code;
@@ -100,6 +122,7 @@ export async function linkGoogle(): Promise<GoogleLinkResult> {
             await signInWithPopup(auth, provider);
           }
           markSignedIn("google");
+          void saveLinkedProvider("google");
           return "switchedToExisting";
         }
         throw e;
@@ -107,6 +130,7 @@ export async function linkGoogle(): Promise<GoogleLinkResult> {
     } else {
       await signInWithPopup(auth, provider);
       markSignedIn("google");
+      void saveLinkedProvider("google");
       return "linked";
     }
   } catch (e) {
@@ -155,6 +179,7 @@ export async function finishKakaoLogin(code: string): Promise<GoogleLinkResult> 
     if (!body.customToken) return "failed";
     await signInWithCustomToken(auth, body.customToken);
     markSignedIn("kakao");
+    void saveLinkedProvider("kakao");
     return body.switched ? "switchedToExisting" : "linked";
   } catch {
     return "failed";

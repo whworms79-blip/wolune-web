@@ -9,7 +9,12 @@ import {
   listMoodEntries,
   type MoodEntry,
 } from "../lib/moodJournal";
-import { LinkAccountCard, shouldShowJournalCard } from "../lib/LinkAccount";
+import {
+  LinkAccountCard,
+  LinkInsightCard,
+  shouldShowJournalCard,
+  shouldShowInsightCard,
+} from "../lib/LinkAccount";
 import {
   fetchInsight,
   insightEntries,
@@ -114,6 +119,7 @@ export default function JournalPage() {
   // 통찰이 처음 열릴 때 "계산은 서버에서, 메모는 안 보냄"을 한 번만 알린다.
   const [notice, setNotice] = useState(false);
   const [showLinkCard, setShowLinkCard] = useState(false);
+  const [showInsightLink, setShowInsightLink] = useState(false);
 
   useEffect(() => {
     const now = new Date();
@@ -146,7 +152,6 @@ export default function JournalPage() {
       if (cancelled) return;
       setEntries(list);
       // 기록이 쌓였는데 아직 익명 → 계정 연결 유도 카드
-      setShowLinkCard(shouldShowJournalCard(list.length));
 
       fetch(chartUrl(inp, { target_date: t }), { cache: "no-store", signal: controller.signal })
         .then((r) => (r.ok ? r.json() : null))
@@ -191,7 +196,6 @@ export default function JournalPage() {
     await saveMoodEntry(entry);
     const list = await listMoodEntries();
     setEntries(list);
-    setShowLinkCard(shouldShowJournalCard(list.length)); // 방금 저장으로 기준을 넘겼을 수 있다
   }
 
   // 통찰 — 기록이 바뀔 때마다(최초 로드·저장 후) 엔진에 다시 묻는다.
@@ -212,6 +216,15 @@ export default function JournalPage() {
       alive = false;
     };
   }, [entries]);
+
+  // 계정 연결 유도 — 기록 수와 통찰 상태에 따라 어느 카드를 보일지 정한다.
+  //   · 통찰이 열렸으면(③) 그쪽이 진짜 유도 → ②는 뜨지 않는다(중복 방지).
+  //   · 익명이 아니거나 이미 "나중에"로 닫았으면 둘 다 뜨지 않는다.
+  useEffect(() => {
+    const unlockedNow = insight?.unlocked ?? false;
+    setShowLinkCard(shouldShowJournalCard(entries.length, unlockedNow));
+    setShowInsightLink(shouldShowInsightCard(unlockedNow));
+  }, [entries, insight]);
 
   // ── 로딩 ──
   if (status === "loading") {
@@ -437,9 +450,15 @@ export default function JournalPage() {
               })}
             </div>
           </section>
+
+          {/* ③ 통찰이 처음 열린 순간 — 이번 유도의 핵심.
+              통찰 카드 바로 아래 이어 붙여 '축하의 연장선'처럼 읽히게 한다. */}
+          {showInsightLink && (
+            <LinkInsightCard onDone={() => setShowInsightLink(false)} />
+          )}
         </div>
 
-        {/* 기록이 쌓였는데 익명 → 계정 연결 유도(닫으면 다시 안 뜸) */}
+        {/* ② 기록이 쌓였을 때(7건~, 통찰 전) — 통찰이 열리면 뜨지 않는다 */}
         {showLinkCard && (
           <div className="section-gap">
             <LinkAccountCard

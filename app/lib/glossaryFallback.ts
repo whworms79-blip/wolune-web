@@ -3,11 +3,12 @@
 import type { GlossaryData } from "./glossary";
 
 export const GLOSSARY_FALLBACK: GlossaryData = {
-  "version": "1.0.0",
-  "count": 58,
+  "version": "1.1.0",
+  "count": 62,
   "inline_terms": [
     "진태양시",
     "형충회합",
+    "배우자궁",
     "지장간",
     "일간",
     "대운",
@@ -26,7 +27,10 @@ export const GLOSSARY_FALLBACK: GlossaryData = {
     "정재",
     "편재",
     "비견",
-    "겁재"
+    "겁재",
+    "상생",
+    "상극",
+    "비화"
   ],
   "terms": [
     {
@@ -83,6 +87,34 @@ export const GLOSSARY_FALLBACK: GlossaryData = {
       "name": "명식",
       "hanja": "命式",
       "short": "태어난 연·월·일·시를 여덟 글자로 펼친 사주 원본이에요.",
+      "category": "concept"
+    },
+    {
+      "key": "상생",
+      "name": "상생",
+      "hanja": "相生",
+      "short": "한 기운이 다른 기운을 낳아 북돋우는 사이예요. 목생화·화생토처럼 이어집니다.",
+      "category": "concept"
+    },
+    {
+      "key": "상극",
+      "name": "상극",
+      "hanja": "相剋",
+      "short": "한 기운이 다른 기운을 누르는 사이예요. 나쁜 게 아니라, 서로를 다잡아 주는 결이에요.",
+      "category": "concept"
+    },
+    {
+      "key": "비화",
+      "name": "비화",
+      "hanja": "比和",
+      "short": "같은 기운끼리 나란한 사이예요. 닮은 만큼 말이 잘 통합니다.",
+      "category": "concept"
+    },
+    {
+      "key": "배우자궁",
+      "name": "배우자궁",
+      "hanja": "配偶者宮",
+      "short": "일지(태어난 날의 아래 글자) 자리로, 짝과의 인연을 보는 자리예요.",
       "category": "concept"
     },
     {

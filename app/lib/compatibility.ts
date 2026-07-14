@@ -15,6 +15,8 @@ export interface CompatChart {
   pillars: { year: CompatPillar; month: CompatPillar; day: CompatPillar; hour?: CompatPillar };
   five_elements: Record<ElKey, { pct: number; count?: number }>;
   character?: { name_ko?: string; name_en?: string; tagline?: string };
+  // 신살 — 엔진은 해당된 것만 SHENSHA_ORDER 순으로 준다(첫 항목이 그 사람의 대표 결).
+  shensha?: { name: string; hanja?: string }[];
 }
 
 // ── 오행 매핑 ──
@@ -121,13 +123,68 @@ function harmonyOf(domA: ElKey, domB: ElKey): Harmony {
   return "control";
 }
 
+// ── 조사(助詞) 고르기 ──
+// 문구에 오행·신살 이름이 변수로 박히므로 "이(가)" 같은 이중표기가 나오기 쉽다. 그건 사람이 쓴
+// 문장처럼 안 읽힌다 → 마지막 글자의 받침을 보고 하나만 고른다.
+// ⚠ 괄호가 붙은 표기("목(木)", "도화(매력)")는 **소리 나는 낱말**을 넘길 것 — josa("목",…).
+const hasJong = (w: string): boolean => {
+  const c = w.charCodeAt(w.length - 1);
+  return c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 !== 0;
+};
+const josa = (word: string, withJong: string, noJong: string) =>
+  hasJong(word) ? withJong : noJong;
+
+// ── 신살 접점 문구표 ──
+// 두 사람의 대표 신살을 이어 "함께일 때 어떤 결인지" 한 문장을 만든다.
+// ⚠ 흉살(백호·양인·괴강)도 겁주지 않는다 — 강점의 언어로만 쓴다(용어사전과 같은 톤).
+// mid = 문장 중간(…-고), end = 문장 끝(…-는). 신살이 하나뿐이면 end 만 쓴다.
+const SHENSHA_TONE: Record<string, { gist: string; mid: string; end: string }> = {
+  "천을귀인": { gist: "도움", mid: "서로에게 기댈 언덕이 되고", end: "어려울 때 먼저 손을 내미는" },
+  "월덕귀인": { gist: "온기", mid: "서로의 모난 데를 감싸고", end: "함께 있으면 마음이 눅어지는" },
+  "문창귀인": { gist: "배움", mid: "이야기가 길어지고", end: "같이 배우고 나누게 되는" },
+  "역마": { gist: "움직임", mid: "자주 밖으로 나서게 되고", end: "함께 있으면 어디론가 떠나고 싶어지는" },
+  "화개": { gist: "깊이", mid: "말없이도 깊어지고", end: "둘만의 세계가 조용히 깊어지는" },
+  "도화": { gist: "매력", mid: "서로에게 자꾸 눈길이 가고", end: "서로에게 자꾸 눈길이 가는" },
+  "백호": { gist: "기세", mid: "서로의 기세를 부추기고", end: "함께라면 겁 없이 밀어붙이는" },
+  "양인": { gist: "결단", mid: "결정이 빨라지고", end: "머뭇거림을 오래 두지 않는" },
+  "괴강": { gist: "강단", mid: "서로의 심지를 알아보고", end: "각자 단단해서 오히려 편안한" },
+};
+
+const shenshaNames = (c: CompatChart): string[] =>
+  (c.shensha ?? []).map((s) => s.name).filter((n) => n in SHENSHA_TONE);
+
 // ── 뷰모델 ──
 export interface CompatPerson {
   name: string;
   initial: string;
   domEl: ElKey;
-  elLabel: string; // "화(火) 강"
+  elLabel: string;          // "화(火) 강"
+  character?: string;       // 캐릭터명("빛나는 검") — 엔진 character.name_ko
+  shensha: string[];        // 이 사람의 신살(사전에 있는 것만)
 }
+
+// 점수 근거 한 줄. chips 의 delta 를 전부 더하면 base 와 합쳐 정확히 score 가 된다.
+// kind 는 색만 정한다 — 명식 형충회합과 같은 규칙(합=라벤더 / 충=화 / 잔긴장=로즈).
+export type BasisKind = "he" | "chong" | "minor" | "neutral";
+export interface BasisRow {
+  chips: { label: string; delta: number }[];
+  note: string;
+  kind: BasisKind;
+}
+export interface ScoreBasis {
+  base: number;      // 60에서 시작
+  rows: BasisRow[];
+  score: number;     // base + 모든 delta 의 합 === score (하한/상한 보정도 한 줄로 드러낸다)
+  disclosure: string; // ★ 이 점수가 우리가 만든 숫자임을 밝히는 문단 — 이 카드의 핵심
+}
+
+// 두 분의 결(신살 접점). 둘 다 신살이 없으면 null.
+export interface ShenshaMeet {
+  a: string[];
+  b: string[];
+  line: string;
+}
+
 export interface CompatView {
   a: CompatPerson;
   b: CompatPerson;
@@ -137,6 +194,8 @@ export interface CompatView {
   good: string;    // 잘 맞는 결
   tension: string; // 다정한 긴장(배려할 점)
   reflection: string;
+  scoreBasis: ScoreBasis;      // 점수 근거 카드
+  shenshaMeet: ShenshaMeet | null; // 두 분의 결
   // 근거(디버깅·확장용) — 화면 필수 아님
   basis: {
     dominant: [ElKey, ElKey];
@@ -145,18 +204,51 @@ export interface CompatView {
   };
 }
 
+// 점수 하한·상한. 사주엔 본래 궁합 점수가 없고 '나쁜 궁합'도 없다 →
+// 아무리 재료가 어긋나도 58 아래로는 내리지 않는다(그 보정도 근거에 정직하게 드러낸다).
+const SCORE_MIN = 58;
+const SCORE_MAX = 97;
+
+const DISCLOSURE_HEAD = (base: number, score: number) => `${base}에서 시작해 ${score}`;
+const DISCLOSURE_BODY =
+  "사주엔 원래 궁합 점수가 없어요. 두 분의 재료를 규칙으로 수치화한 보조 지표일 뿐이고, 낮아도 나쁜 궁합이 아니라 서로 더 배려하면 좋은 사이예요.";
+
 const SUMMARY: Record<Harmony, { title: string; en: string; tagline: string }> = {
   generate: { title: "서로를 키우는 두 사람", en: "The Nurturing Pair", tagline: "곁에 있을수록, 서로를 자라게 하는 사이예요." },
   same: { title: "닮은 결의 두 사람", en: "The Kindred Pair", tagline: "말하지 않아도 통하는 지점이 많은 사이예요." },
   control: { title: "끌어당기는 두 사람", en: "The Magnetic Pair", tagline: "다르기에 오히려 서로에게 끌리는 사이예요." },
 };
 
-const person = (name: string, dom: ElKey): CompatPerson => ({
+const person = (name: string, dom: ElKey, c: CompatChart): CompatPerson => ({
   name,
   initial: (name || "?").trim().charAt(0) || "?",
   domEl: dom,
   elLabel: `${EL_KO[dom]}(${EL_HANJA[dom]}) 강`,
+  character: c.character?.name_ko || undefined,
+  shensha: shenshaNames(c),
 });
+
+// 두 사람의 대표 신살(엔진 순서상 첫 항목)로 "함께일 때의 결" 한 문장을 만든다.
+function shenshaMeetOf(aName: string, bName: string, ssA: string[], ssB: string[]): ShenshaMeet | null {
+  if (!ssA.length && !ssB.length) return null;
+  const repA = ssA[0], repB = ssB[0];
+  // 조사는 괄호 안의 낱말(gist) 소리를 따라간다 — "도화(매력)이", "화개(깊이)가".
+  const tag = (n: string) => `${n}(${SHENSHA_TONE[n].gist})`;
+  const g = (n: string) => SHENSHA_TONE[n].gist;
+
+  let line: string;
+  if (repA && repB && repA !== repB) {
+    line = `${tag(repA)}${josa(g(repA), "과", "와")} ${tag(repB)}${josa(g(repB), "이", "가")} 만나 — ${SHENSHA_TONE[repA].mid} ${SHENSHA_TONE[repB].end} 사이예요.`;
+  } else if (repA && repB) {
+    // 같은 신살을 나눠 가짐
+    line = `두 분 다 ${tag(repA)}${josa(g(repA), "을", "를")} 지녀 — ${SHENSHA_TONE[repA].end} 사이예요.`;
+  } else {
+    const only = repA ?? repB;
+    const who = repA ? aName : bName;
+    line = `${who}님의 ${tag(only)}${josa(g(only), "이", "가")} 두 분 사이에 놓여 — ${SHENSHA_TONE[only].end} 결이 돼요.`;
+  }
+  return { a: ssA, b: ssB, line };
+}
 
 export function buildCompatibility(
   A: CompatChart,
@@ -181,19 +273,93 @@ export function buildCompatibility(
   // ── 점수(0~100, 따뜻한 하한 유지) ──
   // 사주엔 본래 궁합 '점수'가 없다. 아래는 재료를 명시적 규칙으로 수치화한 보조 지표일 뿐,
   // 낮아도 '나쁜 궁합'이 아니라 '서로 더 배려하면 좋은 사이'다(그래서 하한 58).
-  let score = 60;
-  score += h === "generate" ? 16 : h === "same" ? 11 : 7; // 상생 > 비화 > 상극(끌림)
+  //
+  // ⚠ 점수와 근거는 **여기서 한 번에** 만든다. 근거를 나중에 따로 재구성하면 언젠가
+  //    어긋나고, 그러면 화면의 덧셈이 안 맞는다 — 점수를 정직하게 밝히겠다는 카드가
+  //    거짓말을 하게 된다. rows 의 delta 총합 + base 는 **항상** score 와 같다(아래 보정 포함).
+  const base = 60;
+  const rows: BasisRow[] = [];
+  const push = (kind: BasisKind, note: string, ...chips: { label: string; delta: number }[]) => {
+    rows.push({ chips, note, kind });
+  };
+
+  // 1) 오행 관계(상생 / 비화 / 상극)
+  const elA = `${EL_KO[domA]}(${EL_HANJA[domA]})`;
+  const elB = `${EL_KO[domB]}(${EL_HANJA[domB]})`;
+  if (h === "generate") {
+    const [gv, rc] = GEN[domA] === domB ? [domA, domB] : [domB, domA];
+    const gl = `${EL_KO[gv]}(${EL_HANJA[gv]})`, rl = `${EL_KO[rc]}(${EL_HANJA[rc]})`;
+    // "목(木)이 화(火)를 낳는 사이"
+    push("he", `${gl}${josa(EL_KO[gv], "이", "가")} ${rl}${josa(EL_KO[rc], "을", "를")} 낳는 사이`,
+      { label: "상생", delta: 16 });
+  } else if (h === "same") {
+    push("he", `둘 다 ${elA}의 결 — 닮은 기운끼리`, { label: "비화", delta: 11 });
+  } else {
+    push("minor", `${elA}${josa(EL_KO[domA], "과", "와")} ${elB} — 서로를 다잡아 주는 결`,
+      { label: "상극", delta: 7 });
+  }
+
+  // 2) 일간(십성) — 두 사람이 서로를 어떻게 보는가
   const fAB = TEN_GOD_FAVOR[godAB] ?? 4;
   const fBA = TEN_GOD_FAVOR[godBA] ?? 4;
-  score += Math.round((fAB + fBA) / 2);          // 일간 관계(십성) +3~+8
-  score += Math.min(br.he, 3) * 4;               // 지지 합 +0~+12
-  if (br.dayHe) score += 6;                       // 일지(배우자궁) 합 보너스
-  score -= Math.min(br.chong, 3) * 3;            // 충 -0~-9
-  score -= Math.min(br.minor, 2) * 2;            // 형·해·파 -0~-4
-  if (br.dayChong) score -= 3;                    // 일지 충
-  if (domA === weakB) score += 5;                 // A의 강한 오행이 B의 빈 곳을 채움
-  if (domB === weakA) score += 5;                 // 그 반대
-  score = Math.max(58, Math.min(97, Math.round(score)));
+  const godDelta = Math.round((fAB + fBA) / 2); // +3~+8
+  const godPair = godAB === godBA ? godAB : `${godAB}·${godBA}`;
+  push(
+    godDelta >= 7 ? "he" : godDelta >= 5 ? "he" : "minor",
+    godDelta >= 7 ? "서로에게 순한 관계"
+      : godDelta >= 5 ? "무난하게 통하는 관계"
+      : "서로를 자극하는 관계 — 그 자극이 서로를 키우기도 해요",
+    { label: `일간 ${godPair}`, delta: godDelta },
+  );
+
+  // 3) 지지의 합(合) — 잘 맞물리는 자리. 일지(배우자궁)는 따로 가산.
+  const heDelta = Math.min(br.he, 3) * 4;
+  if (heDelta > 0 || br.dayHe) {
+    const chips: { label: string; delta: number }[] = [];
+    if (heDelta > 0) chips.push({ label: `지지 합 ${Math.min(br.he, 3)}쌍`, delta: heDelta });
+    if (br.dayHe) chips.push({ label: "일지 합", delta: 6 });
+    push("he", br.dayHe ? "배우자궁이 맞물림" : "편안하게 통하는 자리가 있음", ...chips);
+  }
+
+  // 4) 충(沖) — 부딪히는 자리
+  const chongDelta = Math.min(br.chong, 3) * 3;
+  if (chongDelta > 0 || br.dayChong) {
+    const chips: { label: string; delta: number }[] = [];
+    if (chongDelta > 0) chips.push({ label: `충 ${Math.min(br.chong, 3)}쌍`, delta: -chongDelta });
+    if (br.dayChong) chips.push({ label: "일지 충", delta: -3 });
+    push("chong", "급할 때 부딪힐 수 있음 — 속도를 맞추면 힘이 돼요", ...chips);
+  }
+
+  // 5) 형·해·파 — 잔긴장
+  const minorDelta = Math.min(br.minor, 2) * 2;
+  if (minorDelta > 0) {
+    push("minor", "가끔 결이 어긋나는 순간", { label: `형·해·파 ${Math.min(br.minor, 2)}쌍`, delta: -minorDelta });
+  }
+
+  // 6) 빈 곳을 채워 줌 — 한쪽의 강한 오행이 다른 쪽의 옅은 오행일 때
+  if (domA === weakB) push("he", `${aName}님이 ${bName}님에게 옅은 ${elA}${josa(EL_KO[domA], "을", "를")} 채워 줌`, { label: "빈 곳을 채움", delta: 5 });
+  if (domB === weakA) push("he", `${bName}님이 ${aName}님에게 옅은 ${elB}${josa(EL_KO[domB], "을", "를")} 채워 줌`, { label: "빈 곳을 채움", delta: 5 });
+
+  const raw = base + rows.reduce((s, r) => s + r.chips.reduce((t, c) => t + c.delta, 0), 0);
+  const score = Math.max(SCORE_MIN, Math.min(SCORE_MAX, raw));
+
+  // 7) 하한·상한 보정도 숨기지 않는다 — 이 줄이 있어야 화면의 덧셈이 실제로 맞는다.
+  if (score !== raw) {
+    push(
+      "neutral",
+      score > raw
+        ? `궁합에 '나쁨'은 없어서 ${SCORE_MIN} 아래로는 내리지 않아요`
+        : `아무리 잘 맞아도 ${SCORE_MAX}까지만 — 완벽한 궁합은 없으니까요`,
+      { label: score > raw ? "하한 보정" : "상한 보정", delta: score - raw },
+    );
+  }
+
+  const scoreBasis: ScoreBasis = {
+    base,
+    rows,
+    score,
+    disclosure: `${DISCLOSURE_HEAD(base, score)} — ${DISCLOSURE_BODY}`,
+  };
 
   // ── 잘 맞는 결 ──
   let good: string;
@@ -235,15 +401,20 @@ export function buildCompatibility(
     tension = "서로의 속도가 다를 수 있으니, 기다려 주는 마음이 두 분을 더 가깝게 해요.";
   }
 
+  const pa = person(aName, domA, A);
+  const pb = person(bName, domB, B);
+
   return {
-    a: person(aName, domA),
-    b: person(bName, domB),
+    a: pa,
+    b: pb,
     score,
     harmony: h,
     summary: SUMMARY[h],
     good,
     tension,
     reflection: "최근 두 사람 사이, 가장 좋았던 순간은 언제였나요?",
+    scoreBasis,
+    shenshaMeet: shenshaMeetOf(aName, bName, pa.shensha, pb.shensha),
     basis: { dominant: [domA, domB], tenGod: [godAB, godBA], branch: br },
   };
 }

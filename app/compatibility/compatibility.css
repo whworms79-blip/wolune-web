@@ -248,8 +248,14 @@
 }
 .person--gold .person__avatar { border: 1.5px solid var(--gold); }
 .person--rose .person__avatar { border: 1.5px solid var(--rose); }
+.person { gap: 6px; width: 108px; }
 .person__name { font-size: var(--fs-body-l); color: var(--text-primary); }
-.person__el { font-size: var(--fs-caption); color: var(--text-secondary); }
+/* 캐릭터명("빛나는 검")이 사람을 훨씬 잘 그린다 → 이게 주(主),
+   오행("화(火) 강")은 아래 작은 부제로 내린다. */
+.person__char { font-size: var(--fs-caption); line-height: 1.35; text-align: center; }
+.person--gold .person__char { color: var(--gold); }
+.person--rose .person__char { color: var(--rose); }
+.person__el { font-size: var(--fs-caption); color: var(--text-tertiary); }
 .pair__heart { align-self: center; margin-top: 22px; color: var(--rose); }
 .pair__heart svg { width: 26px; height: 26px; }
 
@@ -272,8 +278,67 @@
 .insight__icon svg { width: 19px; height: 19px; }
 .insight--good .insight__icon { background: var(--surface-1b); color: var(--element-wood); }
 .insight--tension .insight__icon { background: var(--surface-gold); color: var(--gold); }
+.insight--meet .insight__icon { background: var(--surface-1b); color: var(--lavender); }
 .insight__label--good { color: var(--element-wood); }
 .insight__label--tension { color: var(--gold); }
+.insight__label--meet { color: var(--lavender); }
+
+/* ---------- 점수 근거 ----------
+   점수 카드 바로 아래. 정보는 많지만 시각적으로는 점수보다 뒤에 있어야 한다 →
+   면(surface)은 한 톤 낮추고, 색은 칩 글자에만 얹는다.
+   색 규칙은 명식의 형충회합과 같다: 합=라벤더 / 충=화 / 잔긴장=로즈. */
+.basis { display: flex; flex-direction: column; gap: 12px; }
+.basis__title { color: var(--text-secondary); }
+.basis__rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.basis__row { display: flex; flex-direction: column; gap: 4px; }
+.basis__chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.basis__chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: var(--fs-caption);
+  background: var(--surface-1b);
+  border: 1px solid var(--border-soft);
+  color: var(--text-secondary);
+}
+.basis__chip-delta { font-variant-numeric: tabular-nums; font-weight: 600; }
+.basis__note { font-size: var(--fs-caption); color: var(--text-tertiary); line-height: 1.5; }
+
+.basis__row--he .basis__chip { border-color: var(--lavender); color: var(--lavender); }
+.basis__row--chong .basis__chip { border-color: var(--element-fire); color: var(--element-fire); }
+.basis__row--minor .basis__chip { border-color: var(--rose); color: var(--rose); }
+.basis__row--neutral .basis__chip { border-color: var(--border-soft); color: var(--text-secondary); }
+
+/* ★ 이 문단이 카드의 핵심이다 — 궁합 점수는 사주에 원래 없는, 우리가 만든 숫자다.
+   흐릿하게 처리해 숨기지 말 것. 위 목록과 선으로 확실히 나눠 눈에 걸리게 둔다. */
+.basis__disclosure {
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-soft);
+  font-size: var(--fs-caption);
+  line-height: 1.65;
+  color: var(--text-secondary);
+}
+
+/* ---------- 두 분의 결(신살 접점) ---------- */
+.meet__sides { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.meet__side { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.meet__who { font-size: var(--fs-caption); color: var(--text-tertiary); min-width: 44px; }
+.meet__chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.meet__chip {
+  display: inline-flex;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: var(--fs-caption);
+  background: var(--surface-1b);
+  border: 1px solid var(--lavender);
+  color: var(--lavender);
+}
+.meet__chip .gloss__term { color: inherit; border-bottom-color: currentColor; }
+.meet__chip .gloss__mark { color: inherit; font-size: 0.66em; opacity: 0.7; }
+.meet__line { margin: 0; }
 
 /* ---------- 상태(로딩/오류) ---------- */
 .compat-state {

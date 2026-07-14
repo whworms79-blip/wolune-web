@@ -289,6 +289,13 @@
    색 규칙은 명식의 형충회합과 같다: 합=라벤더 / 충=화 / 잔긴장=로즈. */
 .basis { display: flex; flex-direction: column; gap: 12px; }
 .basis__title { color: var(--text-secondary); }
+/* 74 는 임의의 출발점이 아니라 '평균적인 두 사람'의 실제 기준점이다 — 그렇게 읽히게 둔다. */
+.basis__start {
+  margin: -4px 0 0;
+  font-size: var(--fs-caption);
+  color: var(--text-tertiary);
+}
+.basis__start b { color: var(--text-secondary); font-weight: 600; }
 .basis__rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .basis__row { display: flex; flex-direction: column; gap: 4px; }
 .basis__chips { display: flex; flex-wrap: wrap; gap: 6px; }

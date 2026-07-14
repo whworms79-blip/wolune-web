@@ -5,9 +5,9 @@
 // 한글은 lib/ogFonts.ts 가 넣어주는 서브셋 폰트로 그린다(satori 는 시스템 폰트를 못 쓴다).
 // 폰트를 못 받아오면 두부(□)를 내보내는 대신 라틴 폴백으로 조용히 내려간다.
 import { ImageResponse } from "next/og";
-import { decodePerson, buildCompatibility } from "../../../lib/compatibility";
+import { decodePerson } from "../../../lib/compatibility";
 import { loadOgFonts } from "../../../lib/ogFonts";
-import { fetchChartServer } from "../../fetchChart";
+import { fetchCompatServer } from "../../fetchCompat";
 
 export const dynamic = "force-dynamic"; // searchParams 사용 → 요청 시 렌더
 
@@ -42,17 +42,14 @@ export async function GET(request: Request) {
   let names = "";
 
   if (a && b) {
-    const [ca, cb] = await Promise.all([
-      fetchChartServer(a.input),
-      fetchChartServer(b.input),
-    ]);
-    if (ca && cb) {
-      const v = buildCompatibility(ca, cb, a.name, b.name);
+    // ★ 점수는 엔진이 만든다. 여기서 따로 계산하면 카톡 미리보기만 다른 점수를 그리게 된다.
+    const v = await fetchCompatServer(a, b);
+    if (v) {
       score = String(v.score);
       titleKo = v.summary.title;
       titleEn = v.summary.en;
       tagline = v.summary.tagline;
-      names = `${v.a.name} · ${v.b.name}`;
+      names = `${v.persons[0].name} · ${v.persons[1].name}`;
     }
   }
 

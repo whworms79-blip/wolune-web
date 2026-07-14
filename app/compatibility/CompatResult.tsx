@@ -2,10 +2,13 @@
 // 클라이언트(/compatibility 입력 결과)·서버(/compatibility/share SSR) 양쪽에서 재사용.
 // 하단 액션(공유 버튼 / "나도 내 사주" CTA)만 footer 슬롯으로 갈아끼운다.
 //
+// 점수·근거·문구는 **엔진**이 만든다(POST /v1/compatibility). 여기는 그리기만 한다 —
+// 엔진이 주는 kind(he/chong/minor/neutral)는 '의미'이고, 그게 무슨 색인지는 여기서 정한다.
+//
 // 화면의 3단 구조: 감정(점수·요약) → 재료(점수 근거·두 분의 결) → 성찰.
 // ★ 점수 근거 카드의 마지막 문단(disclosure)은 절대 빼지 말 것. 궁합 점수는 사주에 원래
 //   없는, 우리가 만든 숫자다 — 그걸 정직하게 밝히는 게 이 제품의 핵심이다.
-import type { CompatView, BasisKind } from "../lib/compatibility";
+import { initialOf, type CompatView, type BasisKind } from "../lib/compatibility";
 import { GlossaryText, GlossaryTerm } from "../saju/result/Glossary";
 
 const ico = {
@@ -23,7 +26,7 @@ const Sparkle = () => (<svg viewBox="0 0 24 24" {...ico}><path d="M12 3l1.9 5.1L
 
 const sign = (n: number) => (n > 0 ? `+${n}` : `${n}`);
 
-// 색 규칙은 명식의 형충회합과 동일하다 — 합=라벤더 / 충=화 / 잔긴장=로즈.
+// 색 규칙은 명식의 형충회합과 동일하다 — 합=라벤더 / 충=화 / 잔긴장=로즈 / 중립=회색.
 const KIND_CLASS: Record<BasisKind, string> = {
   he: "basis__row--he",
   chong: "basis__row--chong",
@@ -38,28 +41,29 @@ export default function CompatResult({
   view: CompatView;
   footer?: React.ReactNode;
 }) {
-  const sb = view.scoreBasis;
-  const meet = view.shenshaMeet;
+  const sb = view.score_basis;
+  const meet = view.shensha_meet;
+  const [pa, pb] = view.persons;
 
   return (
     <>
       <div className="pair">
         <div className="person person--gold">
-          <span className="person__avatar" aria-hidden="true">{view.a.initial}</span>
-          <span className="person__name">{view.a.name}</span>
-          {view.a.character ? (
-            <span className="person__char">{view.a.character}</span>
+          <span className="person__avatar" aria-hidden="true">{initialOf(pa.name)}</span>
+          <span className="person__name">{pa.name}</span>
+          {pa.character?.name_ko ? (
+            <span className="person__char">{pa.character.name_ko}</span>
           ) : null}
-          <span className="person__el">{view.a.elLabel}</span>
+          <span className="person__el">{pa.el_label}</span>
         </div>
         <span className="pair__heart" aria-hidden="true"><HeartFill /></span>
         <div className="person person--rose">
-          <span className="person__avatar" aria-hidden="true">{view.b.initial}</span>
-          <span className="person__name">{view.b.name}</span>
-          {view.b.character ? (
-            <span className="person__char">{view.b.character}</span>
+          <span className="person__avatar" aria-hidden="true">{initialOf(pb.name)}</span>
+          <span className="person__name">{pb.name}</span>
+          {pb.character?.name_ko ? (
+            <span className="person__char">{pb.character.name_ko}</span>
           ) : null}
-          <span className="person__el">{view.b.elLabel}</span>
+          <span className="person__el">{pb.el_label}</span>
         </div>
       </div>
 
@@ -84,6 +88,10 @@ export default function CompatResult({
           <span className="wl-section-label basis__title" id="basis-title">
             이 점수는 이렇게 나왔어요
           </span>
+          {/* 74 는 임의의 숫자가 아니라 '평균적인 두 사람'의 실제 기준점이다. */}
+          <p className="basis__start">
+            평균적인 두 사람이 <b>{sb.base}</b>에서 시작해요
+          </p>
           <ul className="basis__rows">
             {sb.rows.map((row, i) => (
               <li key={i} className={`basis__row ${KIND_CLASS[row.kind]}`}>
@@ -130,7 +138,7 @@ export default function CompatResult({
               <span className="wl-section-label insight__label--meet">두 분의 결</span>
             </div>
             <div className="meet__sides">
-              {([[view.a, meet.a], [view.b, meet.b]] as const).map(([p, list], i) =>
+              {([[pa, meet.a], [pb, meet.b]] as const).map(([p, list], i) =>
                 list.length ? (
                   <div className="meet__side" key={i}>
                     <span className="meet__who">{p.name}</span>
@@ -155,11 +163,13 @@ export default function CompatResult({
         <div className="wl-reflection">{view.reflection}</div>
 
         {/* 신뢰 배지 */}
-        <div className="compat-trust-row">
-          <span className="wl-trust-badge">
-            <CircleCheck /> 진태양시로 정밀 계산됨
-          </span>
-        </div>
+        {view.true_solar_time_applied ? (
+          <div className="compat-trust-row">
+            <span className="wl-trust-badge">
+              <CircleCheck /> 진태양시로 정밀 계산됨
+            </span>
+          </div>
+        ) : null}
 
         {footer}
       </div>

@@ -4,8 +4,8 @@
 // OG 메타태그(제목/설명/이미지)로 카톡·SNS 프리뷰가 잘 뜨게 한다.
 import type { Metadata } from "next";
 import Link from "next/link";
-import { decodePerson, buildCompatibility } from "../../lib/compatibility";
-import { fetchChartServer } from "../fetchChart";
+import { decodePerson } from "../../lib/compatibility";
+import { fetchCompatServer } from "../fetchCompat";
 import CompatResult from "../CompatResult";
 // 공유 프리뷰(OG)용 사이트 절대 URL(크롤러는 절대 URL만 인식). 루트 레이아웃과 같은 단일 소스.
 import { SITE_URL as SITE } from "../../lib/site";
@@ -123,12 +123,10 @@ export default async function SharePage({
     );
   }
 
-  const [ca, cb] = await Promise.all([
-    fetchChartServer(a.input),
-    fetchChartServer(b.input),
-  ]);
+  // ⚠ 링크엔 점수가 담기지 않는다 — 열 때마다 엔진이 다시 계산한다.
+  const view = await fetchCompatServer(a, b);
 
-  if (!ca || !cb) {
+  if (!view) {
     return (
       <Fallback
         title="지금은 궁합을 불러오지 못했어요"
@@ -136,8 +134,6 @@ export default async function SharePage({
       />
     );
   }
-
-  const view = buildCompatibility(ca, cb, a.name, b.name);
 
   return (
     <Screen>

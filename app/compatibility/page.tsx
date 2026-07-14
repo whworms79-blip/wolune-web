@@ -6,14 +6,13 @@ import DateField, { type DateValue } from "../saju/DateField";
 import {
   loadSajuInput,
   saveSajuInput,
-  chartUrl,
   chartQuery,
   type SajuInput,
 } from "../lib/sajuInput";
 import {
-  buildCompatibility,
   encodePerson,
-  type CompatChart,
+  isCompatView,
+  toEnginePerson,
   type CompatView,
 } from "../lib/compatibility";
 import CompatResult from "./CompatResult";
@@ -301,18 +300,23 @@ export default function CompatibilityPage() {
     });
 
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 7000);
+    const timer = setTimeout(() => controller.abort(), 9000);
     try {
-      const [ra, rb] = await Promise.all([
-        fetch(chartUrl(inA), { cache: "no-store", signal: controller.signal }),
-        fetch(chartUrl(inB), { cache: "no-store", signal: controller.signal }),
-      ]);
-      if (!ra.ok || !rb.ok) throw new Error("bad_response");
-      const [ca, cb] = (await Promise.all([ra.json(), rb.json()])) as [CompatChart, CompatChart];
-      if (!ca?.pillars || !ca?.five_elements || !cb?.pillars || !cb?.five_elements) {
-        throw new Error("bad_response");
-      }
-      const view = buildCompatibility(ca, cb, me.name, you.name);
+      // 점수·근거·문구는 전부 엔진이 만든다. 브라우저는 엔진 주소를 모르므로 같은 오리진
+      // 프록시(/api/engine/compatibility)를 거친다.
+      const res = await fetch("/api/engine/compatibility", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          a: toEnginePerson(me.name, inA),
+          b: toEnginePerson(you.name, inB),
+        }),
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      if (!res.ok) throw new Error("bad_response");
+      const view = await res.json();
+      if (!isCompatView(view)) throw new Error("bad_response");
       // 공유 링크용 파라미터(두 사람 입력을 URL에 담는다) — 결과 화면 공유 버튼에서 사용
       const shareA = encodePerson(me.name, inA);
       const shareB = encodePerson(you.name, inB);

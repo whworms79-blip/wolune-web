@@ -3,8 +3,8 @@
 import type { GlossaryData } from "./glossary";
 
 export const GLOSSARY_FALLBACK: GlossaryData = {
-  "version": "1.1.0",
-  "count": 62,
+  "version": "1.2.0",
+  "count": 63,
   "inline_terms": [
     "진태양시",
     "형충회합",
@@ -30,7 +30,8 @@ export const GLOSSARY_FALLBACK: GlossaryData = {
     "겁재",
     "상생",
     "상극",
-    "비화"
+    "비화",
+    "절기"
   ],
   "terms": [
     {
@@ -59,6 +60,13 @@ export const GLOSSARY_FALLBACK: GlossaryData = {
       "name": "월운",
       "hanja": "月運",
       "short": "그 달 한 달의 흐름이에요. 절기를 기준으로 나눕니다.",
+      "category": "concept"
+    },
+    {
+      "key": "절기",
+      "name": "절기",
+      "hanja": "節氣",
+      "short": "태양의 위치로 나눈 계절의 마디예요. 사주의 달은 1일이 아니라 입춘·입추 같은 절기에 바뀝니다.",
       "category": "concept"
     },
     {

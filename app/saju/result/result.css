@@ -389,6 +389,21 @@
 }
 .months__month { font-size: 12px; color: var(--text-tertiary); }
 .months__col--current .months__month { color: var(--gold); }
+/* 절기 구간(8.7~9.7) — 칸이 좁으니 아주 작게, 조용히. 정보는 있되 시끄럽지 않게. */
+.months__term {
+  font-size: 9px;
+  line-height: 1.2;
+  color: var(--text-tertiary);
+  opacity: 0.75;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+}
+.months__terms-note {
+  margin-top: 10px;
+  font-size: var(--fs-caption);
+  line-height: 1.55;
+  color: var(--text-tertiary);
+}
 .months__god { font-size: 15px; font-weight: var(--fw-medium); }
 .months__hanja { font-size: 12px; color: var(--text-tertiary); }
 .months__now {

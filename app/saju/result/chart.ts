@@ -58,6 +58,9 @@ interface MonthlyPillar {
   stem_element: ElKey;
   stem_ten_god?: string;
   copy?: FortuneCopy;
+  // 이 월간지가 실제로 유효한 절기 구간. 사주의 달은 1일이 아니라 절기에 바뀐다
+  // (丙申월 = 입추 8/7 ~ 백로 9/7). "8월"이라고만 적으면 월초 며칠이 어긋난다.
+  term?: { term_name: string; term_hanja: string; start: string; end: string; label: string };
 }
 // 형충회합(刑沖會合) — 네 지지 사이 관계 한 건.
 // type: 육합·삼합·방합·육충·육해·형·파 / subtype: 상형·자형·완전·반합 … (없으면 null)
@@ -108,6 +111,8 @@ export interface RelationRow {
 // 월운 스트립 한 칸. current 는 대운 타임라인과 같은 방식으로 강조한다(골드 + "이번 달").
 export interface MonthCell {
   label: string; // "7월"
+  term: string; // "7.7~8.7" — 이 간지가 실제로 유효한 절기 구간(없으면 "")
+  termName: string; // "소서" — 그 달을 여는 절기
   god: string; // 십성 — 툴팁 용어이기도 하다(정재·편관…)
   ganzhi: string; // "乙未"
   el: ElKey; // 천간 오행 — 색
@@ -427,6 +432,10 @@ export function buildView(
   const mf = chart.monthly_fortune;
   const months: MonthCell[] = (mf?.pillars || []).map((p) => ({
     label: `${p.month}월`,
+    // 사주의 달은 양력 1일이 아니라 절기에 바뀐다 — 그걸 숨기지 않고 칸에 함께 적는다.
+    // 숨기면 월초 며칠이 조용히 어긋난다. "정확한 만세력"을 내세우면서 그럴 순 없다.
+    term: p.term?.label || "",
+    termName: p.term?.term_name || "",
     god: p.stem_ten_god || "",
     ganzhi: p.stem + p.branch,
     el: p.stem_element,

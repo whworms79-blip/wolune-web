@@ -228,15 +228,23 @@ export default async function SajuResultPage({
                     <div
                       key={`${m.label}-${m.ganzhi}`}
                       className={`months__col${m.current ? " months__col--current" : ""}`}
-                      aria-label={`${m.label} ${m.god} — ${m.title}${m.current ? " (이번 달)" : ""}`}
+                      aria-label={`${m.label}${m.term ? ` (${m.termName} ${m.term})` : ""} ${m.god} — ${m.title}${m.current ? " (이번 달)" : ""}`}
                     >
                       <span className="months__month">{m.label}</span>
+                      {/* 이 간지가 실제로 유효한 구간. 사주의 달은 절기에 바뀐다 — 8월 1~6일은
+                          아직 지난 달 간지다. 작게라도 밝혀 두는 게 정직하다. */}
+                      {m.term && <span className="months__term">{m.term}</span>}
                       <span className={`months__god wl-el-${m.el}`}>{m.god}</span>
                       <span className="months__hanja">{m.ganzhi}</span>
                       {m.current && <span className="months__now">이번 달</span>}
                     </div>
                   ))}
                 </div>
+                {v.yearFlow.months[0]?.term && (
+                  <p className="months__terms-note">
+                    달의 경계는 <GlossaryTerm term="절기" label="절기(節氣)" /> 기준이에요 — 1일이 아니라 입춘·입추 같은 마디에 바뀝니다.
+                  </p>
+                )}
                 {v.yearFlow.nowMonth && (
                   <p className="wl-body-s wl-text-secondary months__tone">
                     이번 달은 <GlossaryTerm term={v.yearFlow.nowMonth.god} />의 달 —{" "}

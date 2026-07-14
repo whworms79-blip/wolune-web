@@ -6,6 +6,7 @@
 
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { markSignedIn } from "./returning";
+import { announceSwitched, captureAnon, stashPending } from "./carryOver";
 import { saveLinkedProvider } from "./linkedProvider";
 import {
   getAuth,
@@ -113,6 +114,10 @@ export async function linkGoogle(): Promise<GoogleLinkResult> {
           code === "auth/credential-already-in-use" ||
           code === "auth/email-already-in-use"
         ) {
+          // ★ 여기서 uid 가 바뀐다(익명 → 옛 계정). 바뀌기 **전에** 익명 데이터를 읽어둔다 —
+          //   전환 후엔 보안 규칙상 익명 문서에 손댈 수 없다. (lib/carryOver.ts)
+          stashPending(await captureAnon());
+
           const cred = GoogleAuthProvider.credentialFromError(
             e as Parameters<typeof GoogleAuthProvider.credentialFromError>[0],
           );
@@ -123,6 +128,7 @@ export async function linkGoogle(): Promise<GoogleLinkResult> {
           }
           markSignedIn("google");
           void saveLinkedProvider("google");
+          announceSwitched(); // 화면(CarryOverDialog)이 이어붙이고 안내한다
           return "switchedToExisting";
         }
         throw e;
@@ -177,9 +183,14 @@ export async function finishKakaoLogin(code: string): Promise<GoogleLinkResult> 
     if (!res.ok) return "failed";
     const body = (await res.json()) as { customToken?: string; switched?: boolean };
     if (!body.customToken) return "failed";
+
+    // ★ 서버가 "옛 계정으로 전환된다"고 알려준다 → 전환 **전에** 익명 데이터를 읽어둔다.
+    if (body.switched) stashPending(await captureAnon());
+
     await signInWithCustomToken(auth, body.customToken);
     markSignedIn("kakao");
     void saveLinkedProvider("kakao");
+    if (body.switched) announceSwitched();
     return body.switched ? "switchedToExisting" : "linked";
   } catch {
     return "failed";

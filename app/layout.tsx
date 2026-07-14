@@ -3,6 +3,7 @@ import { Cormorant_Garamond } from "next/font/google";
 import { SITE_URL } from "./lib/site";
 import EngineWarmup from "./lib/EngineWarmup";
 import { ConsentProvider } from "./lib/ConsentGate";
+import { CarryOverDialog } from "./CarryOverDialog";
 import "./globals.css";
 
 // voice 폰트 — 워드마크·태그라인용 세리프(우아·신비). CSS 변수로 주입.
@@ -49,6 +50,10 @@ export default function RootLayout({
     <html lang="ko" className={voice.variable}>
       <body>
         <EngineWarmup />
+        {/* 로그인하며 옛 계정으로 전환됐을 때 — 익명 데이터를 이어붙이고 안내한다.
+            로그인 진입점이 여러 곳(마이·랜딩·사주 입력·카카오 콜백)이라, 각 화면에 붙이면
+            언젠가 한 곳을 빠뜨린다 → 루트에 하나만 두고 전환 이벤트를 받는다. */}
+        <CarryOverDialog />
         {/* 동의 게이트 — 저장 직전(useConsent)에서 시트를 띄운다 */}
         <ConsentProvider>{children}</ConsentProvider>
       </body>

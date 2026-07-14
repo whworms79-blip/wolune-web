@@ -1,0 +1,18 @@
+/* 로그인 전환 안내 토스트 — 겁주지 않게, 화면 아래에서 담백하게. */
+.carry-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 92px; /* 하단 탭 위 */
+  transform: translateX(-50%);
+  z-index: 60;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-gold);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  color: var(--text-secondary);
+  font-size: var(--fs-body-s);
+  line-height: 1.5;
+  text-align: center;
+}

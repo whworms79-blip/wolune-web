@@ -283,51 +283,20 @@
 .insight__label--tension { color: var(--gold); }
 .insight__label--meet { color: var(--lavender); }
 
-/* ---------- 점수 근거 ----------
-   점수 카드 바로 아래. 정보는 많지만 시각적으로는 점수보다 뒤에 있어야 한다 →
-   면(surface)은 한 톤 낮추고, 색은 칩 글자에만 얹는다.
-   색 규칙은 명식의 형충회합과 같다: 합=라벤더 / 충=화 / 잔긴장=로즈. */
-.basis { display: flex; flex-direction: column; gap: 12px; }
-.basis__title { color: var(--text-secondary); }
-/* 74 는 임의의 출발점이 아니라 '평균적인 두 사람'의 실제 기준점이다 — 그렇게 읽히게 둔다. */
+/* 점수 근거(.basis*)의 본체는 globals.css 로 옮겼다 — 궁합과 오늘의 운세(홈)가
+   같은 구조를 쓰는 공용 컴포넌트가 됐다. 두 점수 다 우리가 만든 보조 지표이고 근거의
+   모양이 같아야 하므로, CSS가 라우트 하나에 묶여 있으면 안 된다.
+   아래는 궁합 전용 보정(시작점 문구)만 남긴다. */
+
+/* 74 는 임의의 출발점이 아니라 '평균적인 두 사람'의 실제 기준점이다 — 그렇게 읽히게 둔다.
+   ⚠ 오늘의 운세엔 이 줄이 없다. 거기의 50 은 실측 기준점이 아니라 임의의 출발점이라,
+     "50에서 시작해"라고 쓰면 55점 받은 사람이 "중립보다 위"라고 오해한다. */
 .basis__start {
   margin: -4px 0 0;
   font-size: var(--fs-caption);
   color: var(--text-tertiary);
 }
 .basis__start b { color: var(--text-secondary); font-weight: 600; }
-.basis__rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
-.basis__row { display: flex; flex-direction: column; gap: 4px; }
-.basis__chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.basis__chip {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 8px;
-  font-size: var(--fs-caption);
-  background: var(--surface-1b);
-  border: 1px solid var(--border-soft);
-  color: var(--text-secondary);
-}
-.basis__chip-delta { font-variant-numeric: tabular-nums; font-weight: 600; }
-.basis__note { font-size: var(--fs-caption); color: var(--text-tertiary); line-height: 1.5; }
-
-.basis__row--he .basis__chip { border-color: var(--lavender); color: var(--lavender); }
-.basis__row--chong .basis__chip { border-color: var(--element-fire); color: var(--element-fire); }
-.basis__row--minor .basis__chip { border-color: var(--rose); color: var(--rose); }
-.basis__row--neutral .basis__chip { border-color: var(--border-soft); color: var(--text-secondary); }
-
-/* ★ 이 문단이 카드의 핵심이다 — 궁합 점수는 사주에 원래 없는, 우리가 만든 숫자다.
-   흐릿하게 처리해 숨기지 말 것. 위 목록과 선으로 확실히 나눠 눈에 걸리게 둔다. */
-.basis__disclosure {
-  margin: 0;
-  padding-top: 12px;
-  border-top: 1px solid var(--border-soft);
-  font-size: var(--fs-caption);
-  line-height: 1.65;
-  color: var(--text-secondary);
-}
 
 /* ---------- 두 분의 결(신살 접점) ---------- */
 .meet__sides { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }

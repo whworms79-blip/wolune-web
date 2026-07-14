@@ -511,3 +511,78 @@ a {
 .gloss__pop-title { font-size: 13px; font-weight: 600; color: var(--gold); }
 .gloss__hanja { margin-left: 5px; font-weight: 400; font-size: 12px; color: var(--text-tertiary); }
 .gloss__pop-body { font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+
+/* ── 점수 근거(.basis*) — 궁합·오늘의 운세 공용 ──
+   두 점수(궁합 / 오늘의 운세) 다 사주에 원래 없는, 우리가 만든 보조 지표다. 성격도 같고
+   수학도 같다(기준값 + 기여도의 합). 근거의 모양이 다르면 사용자는 두 화면을 다른 제품처럼
+   느낀다 → 같은 구조·같은 색을 쓴다. 그래서 CSS도 라우트가 아니라 여기(전역)에 둔다.
+   색 규칙은 명식의 형충회합과 같다: 플러스(합)=라벤더 / 충=화 / 마이너스(잔긴장)=로즈. */
+.basis { display: flex; flex-direction: column; gap: 12px; }
+.basis__title { color: var(--text-secondary); }
+.basis__rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.basis__row { display: flex; flex-direction: column; gap: 4px; }
+.basis__chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.basis__chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: var(--fs-caption);
+  background: var(--surface-1b);
+  border: 1px solid var(--border-soft);
+  color: var(--text-secondary);
+}
+.basis__chip-delta { font-variant-numeric: tabular-nums; font-weight: 600; }
+.basis__note { font-size: var(--fs-caption); color: var(--text-tertiary); line-height: 1.5; }
+
+.basis__row--he .basis__chip { border-color: var(--lavender); color: var(--lavender); }
+.basis__row--chong .basis__chip { border-color: var(--element-fire); color: var(--element-fire); }
+.basis__row--minor .basis__chip { border-color: var(--rose); color: var(--rose); }
+.basis__row--neutral .basis__chip { border-color: var(--border-soft); color: var(--text-secondary); }
+
+/* ★ 이 문단이 카드의 핵심이다 — 점수는 우리가 만든 숫자다. 흐릿하게 처리해 숨기지 말 것.
+   위 목록과 선으로 확실히 나눠 눈에 걸리게 둔다. */
+.basis__disclosure {
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-soft);
+  font-size: var(--fs-caption);
+  line-height: 1.65;
+  color: var(--text-secondary);
+}
+
+/* ── 홈: "왜 N점인가요?" 토글 ──
+   홈은 매일 스쳐가는 화면이다. 궁합은 특별한 순간에 보는 거라 근거 카드가 커도 되지만,
+   여기선 접어 둔다. 펼치기 전엔 작은 텍스트 버튼 하나로만 존재한다. */
+.why-score {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 6px 0 0;
+  margin: 0;
+  font-size: var(--fs-caption);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+}
+.why-score:hover { color: var(--text-secondary); }
+.why-score__mark { font-size: 0.8em; transition: transform 0.18s ease; }
+.why-score[aria-expanded="true"] .why-score__mark { transform: rotate(180deg); }
+.why-score-panel {
+  margin-top: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-soft);
+}
+.why-score-panel .basis__title { display: block; margin-bottom: 4px; }
+.why-score-panel .basis__intro {
+  margin: 0 0 10px;
+  font-size: var(--fs-caption);
+  color: var(--text-tertiary);
+}
+@media (prefers-reduced-motion: reduce) {
+  .why-score__mark { transition: none; }
+}

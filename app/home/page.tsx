@@ -5,6 +5,7 @@ import Link from "next/link";
 import { loadSajuInput, chartUrl, chartQuery, type SajuInput } from "../lib/sajuInput";
 import { pad } from "../lib/time";
 import { useConsent } from "../lib/ConsentGate";
+import { GlossaryText } from "../saju/result/Glossary";
 import "./home.css";
 
 /* ---------- 인라인 아이콘 ---------- */
@@ -41,6 +42,22 @@ interface Chart {
     tone_line: string;
     matched_field?: string;
     fields?: Record<string, number>;
+    // 점수 근거 — 궁합(lib/compatibility.ts ScoreBasis)과 **같은 스키마**다.
+    // 두 점수 다 우리가 만든 보조 지표이고, 근거의 모양이 다르면 다른 제품처럼 느껴진다.
+    // ⚠ base(50)는 화면에 "여기서 시작해"로 쓰지 않는다 — 궁합의 74와 달리 실측 기준점이
+    //   아니다(실제 중앙값은 60). 그렇게 쓰면 55점 받은 사람이 "중립보다 위"라고 오해한다.
+    score_basis?: {
+      base: number;
+      intro: string;
+      rows: {
+        key: string;
+        kind: "he" | "chong" | "minor" | "neutral";
+        chips: { label: string; delta: number }[];
+        note: string;
+      }[];
+      score: number;
+      disclosure: string;
+    };
   };
 }
 
@@ -76,6 +93,8 @@ function weatherOf(score: number): { title: string; desc: string } {
 
 export default function HomePage() {
   const [state, setState] = useState<State>({ status: "loading" });
+  // 홈은 매일 스쳐가는 화면이라 근거를 항상 펼쳐 두지 않는다(궁합은 특별한 순간이라 펼쳐 둔다).
+  const [whyOpen, setWhyOpen] = useState(false);
   const { promptIfNeeded } = useConsent();
 
   // 기존 사용자(동의 기록 없음)·방침 개정 시 — 홈에서 한 번 부드럽게 권한다("나중에" 가능)
@@ -182,6 +201,7 @@ export default function HomePage() {
   const maxPct = bars[0]?.pct || 1;
 
   const matchedKo = df?.matched_field ? FIELD_KO[df.matched_field] : "";
+  const basis = df?.score_basis;
 
   return (
     <main className="home">
@@ -233,8 +253,49 @@ export default function HomePage() {
                     ? `오늘은 ${matchedKo} 쪽으로 기운이 모이는 흐름이에요.`
                     : "오늘의 기운을 잔잔히 살펴보는 하루예요."}
                 </span>
+                {/* 궁합은 근거를 보여주는데 오늘의 운세는 안 보여주는 건 앞뒤가 안 맞는다.
+                    다만 홈은 매일 보는 곳이라 접어 둔다 — 펼치기 전엔 이 한 줄이 전부다. */}
+                {basis && (
+                  <button
+                    type="button"
+                    className="why-score"
+                    aria-expanded={whyOpen}
+                    aria-controls="why-score-panel"
+                    onClick={() => setWhyOpen((o) => !o)}
+                  >
+                    왜 {score}점인가요?
+                    <span className="why-score__mark" aria-hidden="true">⌄</span>
+                  </button>
+                )}
               </div>
             </div>
+
+            {/* 점수 근거 — 궁합 근거 카드와 같은 구조·같은 색(공용 .basis*) */}
+            {basis && whyOpen && (
+              <div className="why-score-panel basis" id="why-score-panel">
+                <span className="wl-section-label basis__title">이 점수는 이렇게 나왔어요</span>
+                <p className="basis__intro">{basis.intro}</p>
+                <ul className="basis__rows">
+                  {basis.rows.map((row, i) => (
+                    <li key={i} className={`basis__row basis__row--${row.kind}`}>
+                      <span className="basis__chips">
+                        {row.chips.map((c, j) => (
+                          <span key={j} className="basis__chip">
+                            <span className="basis__chip-label"><GlossaryText text={c.label} /></span>
+                            <span className="basis__chip-delta">{c.delta > 0 ? `+${c.delta}` : c.delta}</span>
+                          </span>
+                        ))}
+                      </span>
+                      <span className="basis__note"><GlossaryText text={row.note} /></span>
+                    </li>
+                  ))}
+                </ul>
+                {/* ★ 이 문단을 빼지 말 것 — 하루 점수는 우리가 만든 숫자다. */}
+                <p className="basis__disclosure">
+                  <GlossaryText text={basis.disclosure} />
+                </p>
+              </div>
+            )}
 
             {/* 분야별 점수 */}
             <div className="fortune-fields" aria-label="분야별 점수">

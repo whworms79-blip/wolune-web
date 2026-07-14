@@ -268,11 +268,16 @@ export function LinkInsightCard({ onDone }: { onDone: () => void }) {
     <section className="wl-card link-card link-card--insight" aria-label="계정 연결 안내">
       <div className="link-card__head">
         <span className="link-card__mark"><SproutMark /></span>
-        <span className="wl-body-l">당신만의 패턴이 열렸어요</span>
+        {/* ⚠ 패턴 유무와 무관하게 **참인 문장**이어야 한다.
+            예전엔 "당신만의 패턴이 열렸어요 / 10번의 기록이 만든, 다른 누구에게도 없는
+            결이에요"라고 했는데, 정작 위 카드가 "아직 쏠린 결이 없어요"라고 말하는 경우가
+            흔하다. 없는 결을 있다고 하면 그 순간 신뢰를 잃는다.
+            대신 **10번의 기록** 자체는 언제나 사실이고, 오직 이 사람만 쌓을 수 있다. */}
+        <span className="wl-body-l">이제 당신의 결이 보이기 시작해요</span>
       </div>
       <p className="link-card__body">
-        10번의 기록이 만든, 다른 누구에게도 없는 결이에요.
-        계정을 연결하면 기기를 바꿔도 이 패턴이 계속 자라요.
+        10번의 기록은 당신만 쌓을 수 있어요.
+        연결해두면 기기를 바꿔도 그대로 이어져요.
       </p>
       <LinkCtas
         kakaoLabel="카카오로 연결"

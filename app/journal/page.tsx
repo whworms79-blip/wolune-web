@@ -397,8 +397,12 @@ export default function JournalPage() {
             aria-labelledby="pattern-label"
           >
             <div className="pattern__head">
+              {/* ⚠ 제목은 패턴 유무와 무관하게 참이어야 한다. 예전엔 "당신만의 패턴"이라
+                  단언해 놓고 본문에서 "아직 뚜렷한 패턴은 보이지 않아요"라고 말했다 —
+                  10건 중 상당수가 그 상태다(엔진의 노이즈 검사 이후 더 늘었다).
+                  10번의 기록은 답이 나오는 지점이 아니라 '보기 시작하는 지점'이다. */}
               <span className="wl-section-label" id="pattern-label">
-                {unlocked ? "당신만의 패턴" : "당신만의 패턴을 그리는 중"}
+                {unlocked ? "당신의 결 들여다보기" : "당신의 결을 모으는 중"}
               </span>
               <span className="wl-body-s wl-text-gold">
                 {streak > 0 ? `${streak}일째 기록 중` : "오늘부터 시작해요"}
@@ -419,8 +423,10 @@ export default function JournalPage() {
                 <div className="wl-progress pattern__progress">
                   <div className="wl-progress__fill" style={{ width: `${progress}%` }} />
                 </div>
+                {/* "패턴이 보여요"는 지킬 수 없는 약속이다 — 안 보일 수도 있다.
+                    약속하는 건 '나란히 볼 수 있게 된다'는 것뿐이다. */}
                 <p className="wl-body-s wl-text-secondary">
-                  {`${insightRemaining}개 더 기록하면 당신의 첫 감정 패턴이 보여요.`}
+                  {`${insightRemaining}번 더 기록하면, 마음과 기운을 나란히 볼 수 있어요.`}
                 </p>
               </>
             )}

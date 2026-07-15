@@ -16,11 +16,11 @@
 // ⚠ 익명 문서는 **지우지 못한다.** 보안 규칙이 `request.auth.uid == uid` 라, 전환 후엔
 //   그 문서에 쓸 권한이 없다. 전환 **전에** 지우면 전환이 실패했을 때 진짜로 날아간다.
 //   그래서 남겨둔다(고아 데이터). 정리는 admin 배치의 몫 — 백로그.
-import { collection, doc, getDoc, getDocs, writeBatch } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, setDoc, writeBatch } from "firebase/firestore";
 import { auth, db } from "./firebase";
 import type { SajuInput } from "./sajuInput";
 import type { MoodEntry } from "./moodJournal";
-import type { Consent } from "./consent";
+import { isConsentValid, type Consent } from "./consent";
 
 export interface AnonSnapshot {
   uid: string;
@@ -91,9 +91,14 @@ export async function applyCarryOver(snap: AnonSnapshot): Promise<CarryOutcome> 
     });
   }
 
-  // ── 동의: 옛 계정에 없고 익명 쪽에 있으면 함께 옮긴다 ──
+  // ── 동의: 익명 쪽에 **유효한** 동의가 있고, 옛 계정 B 엔 유효한 동의가 없으면 옮긴다 ──
   //    (안 옮기면 방금 동의한 사람에게 동의 시트가 또 뜬다)
-  const carryConsent = !oldConsent && !!snap.consent;
+  //
+  // ⚠ "B 에 consent 필드가 없을 때"가 아니라 "B 에 **유효한** consent 가 없을 때"다.
+  //   B 가 낡은 버전(REQUIRE_RECONSENT_SINCE 미만)의 동의를 갖고 있으면, 그건 시트를
+  //   막지 못한다 — A 의 최신 동의로 갱신해야 "방금 동의했는데 또 뜨는" 사태가 사라진다.
+  //   단, B 가 이미 **유효한** 동의를 가졌으면 덮지 않는다(그게 더 최신일 수 있다).
+  const carryConsent = isConsentValid(snap.consent) && !isConsentValid(oldConsent);
   if (carryConsent) {
     batch.set(doc(db, "users", uid), { consent: snap.consent }, { merge: true });
   }
@@ -113,6 +118,38 @@ export async function applyCarryOver(snap: AnonSnapshot): Promise<CarryOutcome> 
     return { kind: "carried", saju: canAutoSaju, moods: fresh.length };
   }
   return oldSaju ? { kind: "returned" } : { kind: "none" };
+}
+
+/// linked(익명 승격) 경로용 — 승격 **직전** 익명 uid 의 동의를 읽어둔다.
+///
+/// 왜 필요한가: 온보딩에서 받은 동의는 그때의 익명 uid 에만 있다. 승격(linkWithPopup /
+/// 카카오 switched:false)은 uid 를 **유지**하므로 보통은 동의가 그대로 남지만, 어떤 경로로도
+/// 새 계정에 동의가 비면 홈에서 시트가 다시 뜬다. 그 빈틈을 막는 안전망이다.
+export async function captureConsent(): Promise<Consent | null> {
+  const u = auth.currentUser;
+  if (!u) return null;
+  try {
+    const snap = await getDoc(doc(db, "users", u.uid));
+    return (snap.data()?.consent as Consent | undefined) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/// linked(승격) **직후** 호출 — 승격된 계정에 유효한 동의가 없으면 승격 전 동의를 이어 붙인다.
+/// **조용히**(안내·새로고침 없음) — 승격은 전환이 아니라서 "예전 기록으로 돌아왔어요" 같은 UI 가
+/// 어울리지 않는다. uid 가 유지되면 대개 no-op 이지만, 어떤 경로로도 동의가 새지 않게 한다.
+/// ⚠ 익명 쪽 동의가 **유효할 때만** 옮기고, 현재 계정에 이미 유효한 동의가 있으면 덮지 않는다.
+export async function carryConsentToCurrent(anon: Consent | null): Promise<void> {
+  const u = auth.currentUser;
+  if (!u || !isConsentValid(anon)) return;
+  try {
+    const snap = await getDoc(doc(db, "users", u.uid));
+    if (isConsentValid(snap.data()?.consent as Consent | undefined)) return; // 이미 유효
+    await setDoc(doc(db, "users", u.uid), { consent: anon }, { merge: true });
+  } catch {
+    /* 실패해도 로그인은 유효 — 최악의 경우 시트가 한 번 더 뜰 뿐 데이터 손실은 없다 */
+  }
 }
 
 /// 충돌을 사용자가 "방금 것으로 교체"로 정했을 때만 호출. 그 전엔 아무것도 안 쓴다.

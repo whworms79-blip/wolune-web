@@ -41,16 +41,21 @@ export async function saveConsent(): Promise<void> {
   }
 }
 
-// 유효한 동의가 있는지. 최신 버전일 필요는 없고, REQUIRE_RECONSENT_SINCE 이상이면 된다.
+// 이 동의 기록이 지금도 유효한가. 최신 버전일 필요는 없고, REQUIRE_RECONSENT_SINCE 이상이면 된다.
 // (버전은 YYYY-MM-DD 라 문자열 비교가 곧 날짜 비교다.)
+//
+// ★ 동의 시트 판정(hasCurrentConsent)과 로그인 시 이관 판정(carryOver)이 **같은 기준**을
+//   써야 한다. 한쪽만 다르면 "이관은 했는데 시트는 뜨는" 식의 어긋남이 난다. 그래서 여기 하나로.
+export function isConsentValid(c: Consent | null | undefined): boolean {
+  return !!c?.privacy && !!c?.age14 && (c?.version ?? "") >= REQUIRE_RECONSENT_SINCE;
+}
+
+// 현재 로그인된 uid 에 유효한 동의가 있는지.
 export async function hasCurrentConsent(): Promise<boolean> {
   try {
     const uid = await ensureSignedIn();
     const snap = await getDoc(doc(db, "users", uid));
-    const c = snap.data()?.consent as Consent | undefined;
-    return (
-      !!c?.privacy && !!c?.age14 && (c.version ?? "") >= REQUIRE_RECONSENT_SINCE
-    );
+    return isConsentValid(snap.data()?.consent as Consent | undefined);
   } catch {
     return false;
   }

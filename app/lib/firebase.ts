@@ -6,7 +6,13 @@
 
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { markSignedIn } from "./returning";
-import { announceSwitched, captureAnon, stashPending } from "./carryOver";
+import {
+  announceSwitched,
+  captureAnon,
+  captureConsent,
+  carryConsentToCurrent,
+  stashPending,
+} from "./carryOver";
 import { saveLinkedProvider } from "./linkedProvider";
 import {
   getAuth,
@@ -135,9 +141,12 @@ export async function linkGoogle(): Promise<GoogleLinkResult> {
     await ensureSignedIn();
     const current = auth.currentUser;
     if (current && current.isAnonymous) {
+      // 승격 직전 익명 동의를 읽어둔다 — 승격 후 유효한 동의가 없으면 이어 붙인다(안전망).
+      const anonConsent = await captureConsent();
       try {
         await linkWithPopup(current, provider);
         refreshSession(); // 익명→구글 승격(uid 유지지만 상태가 바뀌었으니 캐시를 맞춘다)
+        await carryConsentToCurrent(anonConsent); // 온보딩 동의가 새지 않게(조용히)
         markSignedIn("google");
         void saveLinkedProvider("google");
         return "linked";
@@ -221,12 +230,18 @@ export async function finishKakaoLogin(code: string): Promise<GoogleLinkResult> 
 
     // ★ 서버가 "옛 계정으로 전환된다"고 알려준다 → 전환 **전에** 익명 데이터를 읽어둔다.
     if (body.switched) stashPending(await captureAnon());
+    // 승격(switched:false, uid 유지)일 땐 승격 전 동의를 읽어둔다 — 아래에서 이어 붙인다.
+    const anonConsent = body.switched ? null : await captureConsent();
 
     await signInWithCustomToken(auth, body.customToken);
     refreshSession(); // ★ 카카오 커스텀 토큰으로 uid 가 바뀌었다 — 캐시를 즉시 새 계정으로
     markSignedIn("kakao");
     void saveLinkedProvider("kakao");
-    if (body.switched) announceSwitched();
+    if (body.switched) {
+      announceSwitched();
+    } else {
+      await carryConsentToCurrent(anonConsent); // 승격 시 온보딩 동의가 새지 않게(조용히)
+    }
     return body.switched ? "switchedToExisting" : "linked";
   } catch {
     return "failed";

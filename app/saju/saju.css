@@ -416,17 +416,28 @@
 .returning-hint__text { line-height: 1.6; }
 .returning-hint__actions {
   display: flex;
+  flex-direction: column; /* 세로 스택 — 카카오(주) 위, 구글(보조) 아래. 순서 고정. */
   gap: 8px;
   margin-top: 10px;
 }
-/* 좁은 폭에서 '카카오로 로그/인' 처럼 글자가 쪼개지지 않게. */
-.returning-hint__actions > * {
-  flex: 1 1 0;
-  min-width: 0;
-  white-space: nowrap;
-  padding-left: 8px;
-  padding-right: 8px;
-  font-size: var(--fs-body-s);
+/* 지난번에 쓰신 수단 표시 — 버튼 **위** 캡션(버튼 안이 아니라 위 → 카카오 규정 안전).
+   위계를 해치지 않게 작고 은은하게(muted). 골드 점 하나로 어느 버튼인지만 가리킨다.
+   캡션은 어두운 카드 배경 위에 있어 카카오 노란 버튼과 무관하게 읽힌다. */
+.returning-hint__last {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 4px 2px -2px; /* 바로 아래 버튼에 붙여, 그 버튼의 라벨임이 읽히게 */
+  font-size: var(--fs-caption);
+  color: var(--text-tertiary);
+}
+.returning-hint__last::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--gold);
 }
 .returning-hint__error { margin-top: 8px; color: var(--rose); }
 

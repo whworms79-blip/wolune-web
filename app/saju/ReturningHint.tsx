@@ -101,33 +101,25 @@ export default function ReturningHint() {
           : "예전에 로그인해서 쓰신 적이 있다면, 먼저 로그인하시면 기록이 그대로 돌아와요."}
       </p>
       <div className="returning-hint__actions">
-        {/* 카카오는 규정상 노란 채움 그대로 → 구글은 테두리형으로 낮춘다(둘이 안 싸우게).
-            마지막에 쓴 방법을 먼저 놓는다(어떤 버튼을 앞에 둘지에만 쓴다 — 식별 정보 아님). */}
-        {prov === "google" ? (
-          <>
-            <button
-              type="button"
-              className="google-btn returning-hint__google"
-              onClick={signInGoogle}
-              disabled={busy}
-            >
-              구글 로그인
-            </button>
-            <KakaoButton disabled={busy} />
-          </>
-        ) : (
-          <>
-            <KakaoButton disabled={busy} />
-            <button
-              type="button"
-              className="google-btn returning-hint__google"
-              onClick={signInGoogle}
-              disabled={busy}
-            >
-              구글 로그인
-            </button>
-          </>
+        {/* 세로 스택으로 위계를 준다: 카카오(규정상 노란 채움)를 주 CTA로 **위**에, 구글(테두리형)을
+            보조로 **아래**에 — 순서는 고정한다(위치가 흔들리지 않게).
+            지난번에 쓰신 수단엔 작은 라벨만 붙인다 — 버튼 **위** 캡션이라 카카오 버튼 자체는
+            규정대로(색·심볼·문구·모서리) 그대로 둔다. */}
+        {prov === "kakao" && (
+          <span className="returning-hint__last">지난번에 이 방법을 쓰셨어요</span>
         )}
+        <KakaoButton disabled={busy} />
+        {prov === "google" && (
+          <span className="returning-hint__last">지난번에 이 방법을 쓰셨어요</span>
+        )}
+        <button
+          type="button"
+          className="google-btn"
+          onClick={signInGoogle}
+          disabled={busy}
+        >
+          구글 로그인
+        </button>
       </div>
       {error && (
         <p className="wl-body-s returning-hint__error" role="alert">

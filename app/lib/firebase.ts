@@ -56,9 +56,32 @@ try {
 }
 export const db = _db;
 
+// ⚠ 이 캐시는 "지금 로그인한 uid"다 — 로그인/전환/로그아웃으로 uid가 바뀌면 **반드시** 갱신해야 한다.
+//
+// 예전엔 첫 익명 로그인 uid 를 프라미스에 담아 고정하고, 갱신은 signOutToAnon 한 곳뿐이었다.
+// 그래서 구글/카카오 로그인으로 uid 가 익명 A → 계정 B 로 바뀌어도 이 캐시는 A 였다.
+// → 로그인 **후** 저장한 사주·무드·동의가 전부 익명 A(고아)로 새고, 마이·궁합은 계정 B 의
+//   옛 값을 읽는 정합성 붕괴가 났다(2026-07-15 진단·수정).
+//
+// 이제 두 겹으로 막는다:
+//   1) onAuthStateChanged 로 **모든** uid 변화를 자동 반영(로그인 경로가 몇 개든 하나도 안 빠진다)
+//   2) 각 로그인 함수가 전환 직후 refreshSession() 을 직접 호출(리스너가 마이크로태스크로 늦게
+//      도는 레이스에서, 로그인 직후 첫 저장이 옛 uid 로 새지 않도록)
 let signInPromise: Promise<string> | null = null;
 
-// 익명 로그인 보장. 한 세션에서 1번만 실행되도록 프라미스를 캐시한다.
+// uid 가 바뀐 직후(또는 로그아웃 후) 세션 캐시를 지금 계정으로 맞춘다.
+function refreshSession(): void {
+  const u = auth.currentUser;
+  signInPromise = u ? Promise.resolve(u.uid) : null;
+}
+
+// ★ 진실의 원천은 auth 상태다. 로그인/전환/로그아웃 무엇이든 여기서 캐시를 갱신 → 놓치는 경로가 없다.
+onAuthStateChanged(auth, (u) => {
+  signInPromise = u ? Promise.resolve(u.uid) : null;
+});
+
+// 익명 로그인 보장. 아직 로그인 이력이 없을 때만 익명 로그인을 띄운다.
+// (한 번 정해진 뒤엔 위 리스너가 uid 변화를 반영하므로, 여기 캐시는 항상 '지금 계정'이다.)
 export function ensureSignedIn(): Promise<string> {
   if (!signInPromise) {
     signInPromise = (async () => {
@@ -105,6 +128,7 @@ export async function linkGoogle(): Promise<GoogleLinkResult> {
     if (current && current.isAnonymous) {
       try {
         await linkWithPopup(current, provider);
+        refreshSession(); // 익명→구글 승격(uid 유지지만 상태가 바뀌었으니 캐시를 맞춘다)
         markSignedIn("google");
         void saveLinkedProvider("google");
         return "linked";
@@ -126,6 +150,7 @@ export async function linkGoogle(): Promise<GoogleLinkResult> {
           } else {
             await signInWithPopup(auth, provider);
           }
+          refreshSession(); // ★ uid 가 익명 A → 계정 B 로 바뀌었다 — 캐시를 즉시 B 로(레이스 방지)
           markSignedIn("google");
           void saveLinkedProvider("google");
           announceSwitched(); // 화면(CarryOverDialog)이 이어붙이고 안내한다
@@ -135,6 +160,7 @@ export async function linkGoogle(): Promise<GoogleLinkResult> {
       }
     } else {
       await signInWithPopup(auth, provider);
+      refreshSession(); // 비익명 상태에서 구글 로그인 — uid 가 바뀔 수 있으니 캐시를 맞춘다
       markSignedIn("google");
       void saveLinkedProvider("google");
       return "linked";
@@ -188,6 +214,7 @@ export async function finishKakaoLogin(code: string): Promise<GoogleLinkResult> 
     if (body.switched) stashPending(await captureAnon());
 
     await signInWithCustomToken(auth, body.customToken);
+    refreshSession(); // ★ 카카오 커스텀 토큰으로 uid 가 바뀌었다 — 캐시를 즉시 새 계정으로
     markSignedIn("kakao");
     void saveLinkedProvider("kakao");
     if (body.switched) announceSwitched();

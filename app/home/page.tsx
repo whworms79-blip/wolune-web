@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { loadSajuInput, chartUrl, chartQuery, type SajuInput } from "../lib/sajuInput";
+import { loadSajuInput, chartUrl, type SajuInput } from "../lib/sajuInput";
 import { pad } from "../lib/time";
 import { useConsent } from "../lib/ConsentGate";
 import { GlossaryText } from "../saju/result/Glossary";
@@ -192,7 +192,8 @@ export default function HomePage() {
   const score = df?.overall_score ?? 0;
   const weather = weatherOf(score);
   const trueSolar = !!chart.calc_meta?.true_solar_time_applied;
-  const resultHref = `/saju/result?${chartQuery(input).toString()}`;
+  // 파라미터 없이 이동 — 결과 페이지가 Firestore 에서 읽는다(개인정보를 URL·기록에 안 남김).
+  const resultHref = "/saju/result";
 
   // 오행 막대 — 강한 순, 라벨만(값 없음), 최댓값 44px
   const bars = (Object.keys(fe) as string[])

@@ -122,7 +122,8 @@ export default function SajuInputPage() {
       const saved = await loadSajuInput();
       if (cancelled) return;
       if (saved && !editMode) {
-        router.replace(`/saju/result?${chartQuery(saved).toString()}`);
+        // 파라미터 없이 이동 — 결과 페이지가 Firestore 에서 읽는다(개인정보를 URL·기록에 안 남김).
+        router.replace("/saju/result");
         return; // 폼 대신 결과로 — checking 유지(스피너)
       }
       if (saved) {

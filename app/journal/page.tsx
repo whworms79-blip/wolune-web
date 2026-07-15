@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { loadSajuInput, chartUrl, chartQuery, type SajuInput } from "../lib/sajuInput";
+import { loadSajuInput, chartUrl, type SajuInput } from "../lib/sajuInput";
 import {
   getMoodEntry,
   saveMoodEntry,
@@ -262,7 +262,8 @@ export default function JournalPage() {
   // ── 정상 ──
   const df = chart?.daily_fortune;
   const weather = df ? weatherOf(df.overall_score) : null;
-  const resultHref = input ? `/saju/result?${chartQuery(input).toString()}` : "/saju";
+  // 파라미터 없이 이동 — 결과 페이지가 Firestore 에서 읽는다(개인정보를 URL·기록에 안 남김).
+  const resultHref = input ? "/saju/result" : "/saju";
   const entryMap = Object.fromEntries(entries.map((e) => [e.date, e]));
   const week = weekKeys(today);
   // 오늘까지 연속 기록 일수(streak) — 이미 불러온 entries로 계산.

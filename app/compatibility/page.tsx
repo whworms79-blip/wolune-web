@@ -5,7 +5,6 @@ import Link from "next/link";
 import DateField, { type DateValue } from "../saju/DateField";
 import {
   loadSajuInput,
-  chartQuery,
   type SajuInput,
 } from "../lib/sajuInput";
 import {
@@ -276,7 +275,8 @@ export default function CompatibilityPage() {
       const saved = await loadSajuInput();
       if (cancelled || !saved) return;
       setMe(fromSaved(saved));
-      setSavedHref(`/saju/result?${chartQuery(saved).toString()}`);
+      // 파라미터 없이 이동 — 결과 페이지가 Firestore 에서 읽는다(개인정보를 URL·기록에 안 남김).
+      setSavedHref("/saju/result");
     })();
     return () => {
       cancelled = true;

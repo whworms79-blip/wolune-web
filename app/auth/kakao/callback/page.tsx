@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { confirmUid, finishKakaoLogin } from "../../../lib/firebase";
 import { armCarryHandoff, disarmCarryHandoff } from "../../../lib/carryOver";
-import { chartQuery, loadSajuInput } from "../../../lib/sajuInput";
+import { loadSajuInput } from "../../../lib/sajuInput";
 import "./callback.css";
 
 export default function KakaoCallbackPage() {
@@ -58,12 +58,11 @@ export default function KakaoCallbackPage() {
 
       // 공통 마무리 — ★ 사주를 읽기 전에 currentUser(uid) 확정을 명시적으로 기다린다.
       // 사주가 있으면 결과 화면으로(구글 로그인과 동작 일치), 없으면(신규) 마이로.
+      // 결과로 갈 땐 파라미터 없이 이동 — 결과 페이지가 Firestore 에서 읽는다(개인정보 URL 노출 없음).
       await confirmUid();
       const saved = await loadSajuInput();
       if (cancelled) return;
-      const dest = saved
-        ? `/saju/result?${chartQuery(saved).toString()}`
-        : "/my";
+      const dest = saved ? "/saju/result" : "/my";
       window.setTimeout(() => router.replace(dest), 1000);
     })();
     return () => {

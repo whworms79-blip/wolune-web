@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { confirmUid, isAnonymous, linkGoogle, onAuthChange } from "../lib/firebase";
 import { armCarryHandoff, disarmCarryHandoff } from "../lib/carryOver";
-import { chartQuery, loadSajuInput } from "../lib/sajuInput";
+import { loadSajuInput } from "../lib/sajuInput";
 import { hasSignedInBefore, lastProvider, type Provider } from "../lib/returning";
 import { KakaoButton } from "../lib/LinkAccount";
 
@@ -71,7 +71,8 @@ export default function ReturningHint() {
     await confirmUid();
     const saved = await loadSajuInput();
     if (saved) {
-      router.replace(`/saju/result?${chartQuery(saved).toString()}`);
+      // 파라미터 없이 이동 — 결과 페이지가 Firestore 에서 읽는다(개인정보를 URL·기록에 안 남김).
+      router.replace("/saju/result");
       return;
     }
     // 로그인은 했는데 사주가 없다(그 계정으로 저장한 적 없음) → 신규 안내로 바꾸고 계속 입력.

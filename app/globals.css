@@ -308,16 +308,21 @@ a {
   gap: 10px;
   padding: 13px 15px;
   border-radius: var(--radius-button);
-  background: transparent;
-  border: var(--border-width) solid var(--border-soft);
+  /* 투명 배경은 카드 톤(surface-1b/2)과 테두리색이 겹쳐 버튼이 안 보였다.
+     가장 깊은 톤으로 채워 카드보다 한 단 낮게 앉히면 윤곽이 살아난다 — 채도 없는
+     뉴트럴이라 카카오 노랑과 싸우지 않고, 여전히 보조(2순위)로 읽힌다. */
+  background: var(--surface-1);
+  border: var(--border-width) solid var(--border-input);
   color: var(--text-secondary);
   font-family: var(--font-sans);
   font-size: var(--fs-body-l);
   font-weight: var(--fw-medium);
   cursor: pointer;
-  transition: border-color var(--transition-soft), color var(--transition-soft);
+  transition: border-color var(--transition-soft), color var(--transition-soft),
+              background var(--transition-soft);
 }
 .google-btn:hover:not(:disabled) {
+  background: var(--surface-1b);
   border-color: var(--border-gold);
   color: var(--text-primary);
 }

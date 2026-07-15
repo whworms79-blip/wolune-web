@@ -15,6 +15,7 @@ import {
   applyCarryOver,
   consumePending,
   replaceSajuWithAnon,
+  settleCarryHandoff,
   type AnonSnapshot,
   type CarryOutcome,
 } from "./lib/carryOver";
@@ -59,26 +60,37 @@ export function CarryOverDialog() {
   useEffect(() => {
     async function onSwitched() {
       const snap = consumePending();
-      if (!snap) return;
+      if (!snap) {
+        settleCarryHandoff(false); // 옮길 게 없다 → 화면을 안 떠맡는다(호출부가 폴백)
+        return;
+      }
 
       let out: CarryOutcome;
       try {
         out = await applyCarryOver(snap);
       } catch {
-        return; // 이어붙이기 실패 — 로그인 자체는 유효하므로 조용히 넘어간다
+        // 이어붙이기 실패 — 로그인 자체는 유효. 화면은 호출부가 결과/신규로 마무리한다.
+        settleCarryHandoff(false);
+        return;
       }
 
       if (out.kind === "conflict") {
         setConflictMoods(out.moods);
         setConflict(out.snapshot);
+        settleCarryHandoff(true); // 충돌 모달로 화면을 떠맡았다(고른 뒤 새로고침→결과)
         return; // 사용자가 고르기 전엔 아무것도 쓰지 않았다
       }
       if (out.kind === "carried") {
+        settleCarryHandoff(true); // 새로고침이 결과까지 이끈다
         reloadWith(carriedText(out.saju, out.moods));
       } else if (out.kind === "returned") {
+        settleCarryHandoff(true);
         reloadWith("예전 기록으로 돌아왔어요.");
+      } else {
+        // kind === "none" — 양쪽 다 비었다 = 사실상 신규. 새로고침이 없으니
+        // 호출부가 결과(없음)→신규 안내로 마무리하도록 넘긴다(빈 폼에 멈추지 않게).
+        settleCarryHandoff(false);
       }
-      // kind === "none" 이면 아무 말도 하지 않는다(신규 로그인).
     }
 
     window.addEventListener(CARRY_EVENT, onSwitched);

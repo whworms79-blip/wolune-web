@@ -10,6 +10,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { confirmUid, isAnonymous, linkGoogle, onAuthChange } from "../lib/firebase";
+import { armCarryHandoff, disarmCarryHandoff } from "../lib/carryOver";
 import { chartQuery, loadSajuInput } from "../lib/sajuInput";
 import { hasSignedInBefore, lastProvider, type Provider } from "../lib/returning";
 import { KakaoButton } from "../lib/LinkAccount";
@@ -38,29 +39,34 @@ export default function ReturningHint() {
     if (busy) return;
     setBusy(true);
     setError("");
+    // 전환 시 이어붙이기(CarryOverDialog)가 화면을 떠맡는지 기다릴 준비(전환 아니면 아래에서 해제).
+    const handoff = armCarryHandoff();
     const res = await linkGoogle();
     if (res === "canceled") {
+      disarmCarryHandoff();
       setBusy(false);
       return;
     }
     if (res === "failed") {
+      disarmCarryHandoff();
       setBusy(false);
       setError("로그인하지 못했어요. 잠시 후 다시 시도해 주세요.");
       return;
     }
 
-    // ── 옛 계정으로 전환됐다면 — 이어붙이기(CarryOverDialog)가 순서의 주인이다. ──
-    // 그쪽이 병합/충돌을 처리한 뒤 화면을 새로 그리고(reload), 새로고침된 입력 페이지가
-    // 저장된 사주를 스스로 결과로 넘긴다 → **이어붙이기가 먼저, 결과는 그 다음.**
-    // 여기서 결과로 직접 보내면 이어붙이기와 순서가 꼬이므로 넘기지 않는다.
-    // (옛 계정도 비어 새로고침이 없는 경우엔 아래에서 폼에 머문다.)
     if (res === "switchedToExisting") {
-      setBusy(false);
-      setAnon(false); // 더는 익명이 아니다 — 안내를 감추고 CarryOverDialog 에 맡긴다
-      return;
+      // ── 옛 계정으로 전환 — 이어붙이기(CarryOverDialog)가 순서의 주인이 될 수 있다. ──
+      // carried/returned/conflict 면 그쪽이 새로고침/충돌모달로 화면을 이끈다(이어붙이기 먼저,
+      // 결과는 그 다음). 그 경우엔 여기서 손을 뗀다.
+      const tookOver = await handoff;
+      if (tookOver) return;
+      // 새로고침이 없다(양쪽 다 비었거나 캡처/이어붙이기 실패) = 사실상 신규 →
+      // 아래 공통 마무리로 떨어진다(빈 폼에 말없이 멈추지 않게).
+    } else {
+      disarmCarryHandoff(); // linked — 전환 아님. 대기 프라미스 정리.
     }
 
-    // ── linked — uid 는 그대로(익명 승격 또는 재로그인, 이어붙이기 없음). ──
+    // ── 공통 마무리 (linked, 또는 전환인데 이어붙이기가 화면을 안 떠맡은 경우). ──
     // ★ 저장된 사주를 읽기 전에 currentUser(uid) 확정을 명시적으로 기다린다.
     await confirmUid();
     const saved = await loadSajuInput();

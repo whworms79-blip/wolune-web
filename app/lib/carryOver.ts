@@ -148,3 +148,35 @@ export function consumePending(): AnonSnapshot | null {
   pending = null;
   return p;
 }
+
+// ── 전환 후 "누가 화면을 이끄는가"를 로그인 호출부에 알려주는 핸드오프 ──
+//
+// 전환(switchedToExisting)은 CarryOverDialog 가 이벤트로 받아 처리하는데, 그 처리 방식이
+// 두 갈래다:
+//   · carried/returned/conflict → 새로고침 또는 충돌 모달로 **화면을 떠맡는다**(결과까지 이끈다).
+//   · none/캡처실패/이어붙이기실패 → **아무 일도 안 일어난다.**
+// 후자에서 호출부(signInGoogle·카카오 콜백)가 손을 놓으면, 버튼만 숨은 채 빈 폼에 말없이 멈춘다.
+// 그래서 호출부가 "이어붙이기가 화면을 떠맡았는지"를 기다렸다가, 안 떠맡았으면 스스로
+// 결과/신규 안내로 마무리하도록 이 신호를 둔다.
+//   tookOver=true  → 새로고침/충돌모달이 이끈다 → 호출부는 손 뗀다.
+//   tookOver=false → 아무 일도 없다 → 호출부가 confirmUid→사주로드→결과/신규로 마무리.
+let handoffResolve: ((tookOver: boolean) => void) | null = null;
+
+/// 전환 가능성이 있는 로그인 **직전**에 무장한다(전환이 아니면 disarm 으로 정리).
+export function armCarryHandoff(): Promise<boolean> {
+  return new Promise<boolean>((resolve) => {
+    handoffResolve = resolve;
+  });
+}
+
+/// CarryOverDialog 가 처리 방향을 정한 뒤 호출한다(모든 갈래에서 정확히 한 번).
+export function settleCarryHandoff(tookOver: boolean): void {
+  const r = handoffResolve;
+  handoffResolve = null;
+  r?.(tookOver);
+}
+
+/// 전환이 아니었을 때(또는 취소·실패) 호출부가 대기 프라미스를 닫는다.
+export function disarmCarryHandoff(): void {
+  settleCarryHandoff(false);
+}

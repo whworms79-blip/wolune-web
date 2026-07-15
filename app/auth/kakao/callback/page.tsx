@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { confirmUid, finishKakaoLogin } from "../../../lib/firebase";
+import { armCarryHandoff, disarmCarryHandoff } from "../../../lib/carryOver";
 import { chartQuery, loadSajuInput } from "../../../lib/sajuInput";
 import "./callback.css";
 
@@ -26,24 +27,36 @@ export default function KakaoCallbackPage() {
         return;
       }
 
+      // 전환 시 이어붙이기(CarryOverDialog)가 화면을 떠맡는지 기다릴 준비.
+      const handoff = armCarryHandoff();
       const r = await finishKakaoLogin(code);
-      if (cancelled) return;
+      if (cancelled) {
+        disarmCarryHandoff();
+        return;
+      }
       if (r === "failed") {
+        disarmCarryHandoff();
         setMsg("연결에 실패했어요. 잠시 후 돌아갑니다…");
         window.setTimeout(() => router.replace("/my"), 1400);
         return;
       }
       setMsg("연결됐어요! 돌아갑니다…");
 
-      // 옛 계정으로 전환됐다면 — 이어붙이기(CarryOverDialog)가 순서의 주인이다.
-      // 그쪽이 병합/충돌을 처리하고 화면을 새로 그린다 → 여기서 결과로 먼저 보내면 꼬인다.
-      // 마이로만 돌려보내고, 결과로 데려가는 건 이어붙이기 뒤 새로고침에 맡긴다.
       if (r === "switchedToExisting") {
-        window.setTimeout(() => router.replace("/my"), 1000);
-        return;
+        // 옛 계정으로 전환 — carried/returned/conflict 면 이어붙이기가 새로고침/충돌모달로
+        // 화면을 이끈다(마이로 안착). 그 경우엔 여기서 마이로만 돌려보내고 손을 뗀다.
+        const tookOver = await handoff;
+        if (cancelled) return;
+        if (tookOver) {
+          window.setTimeout(() => router.replace("/my"), 1000);
+          return;
+        }
+        // 새로고침이 없다(양쪽 다 비었거나 실패) = 사실상 신규 → 아래 공통 마무리로.
+      } else {
+        disarmCarryHandoff(); // linked — 전환 아님. 대기 프라미스 정리.
       }
 
-      // linked — ★ 저장된 사주를 읽기 전에 currentUser(uid) 확정을 명시적으로 기다린다.
+      // 공통 마무리 — ★ 사주를 읽기 전에 currentUser(uid) 확정을 명시적으로 기다린다.
       // 사주가 있으면 결과 화면으로(구글 로그인과 동작 일치), 없으면(신규) 마이로.
       await confirmUid();
       const saved = await loadSajuInput();

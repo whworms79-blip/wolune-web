@@ -13,6 +13,7 @@ import {
 } from "../lib/sajuInput";
 import { pad, parseTime, to12h } from "../lib/time";
 import { SIJIN, sijinOfTime } from "../lib/sijin";
+import SijinSelect from "./SijinSelect";
 import { CITIES } from "../lib/cities";
 import { saveConsent } from "../lib/consent";
 import "./saju.css";
@@ -301,27 +302,9 @@ export default function SajuInputPage() {
               태어난 시간
             </label>
 
-            {/* 시진 선택(기본) — exact 모드가 아닐 때만 */}
+            {/* 시진 선택(기본) — exact 모드가 아닐 때만. 커스텀 드롭다운(SijinSelect) */}
             {!exactMode && (
-              <div className="input-wrap">
-                <span className="input-wrap__icon" aria-hidden="true">
-                  <ClockIcon />
-                </span>
-                <select
-                  className="wl-input time-select"
-                  id="birth-sijin"
-                  value={sijinKey}
-                  onChange={(e) => setSijinKey(e.target.value)}
-                >
-                  <option value="" disabled>어느 시진에 태어나셨나요?</option>
-                  <option value="unknown">시간 모름</option>
-                  {SIJIN.map((s) => (
-                    <option key={s.key} value={s.key}>
-                      {s.name} · {s.daily}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <SijinSelect value={sijinKey} onChange={setSijinKey} />
             )}
 
             {/* 정확한 시각(옵션) — 오전/오후 + HH:MM */}

@@ -75,10 +75,9 @@
 .input-wrap__icon svg { width: 18px; height: 18px; }
 .input-wrap .wl-input { padding-left: 42px; }
 
-/* 드롭다운(select) — 태어난 곳 + 태어난 시간(시진). 왼쪽 아이콘 + 오른쪽 ▼.
-   높은 특이도(.input-wrap .city-select)로 .wl-input 의 background 단축속성을 확실히 덮는다. */
-.input-wrap .city-select,
-.input-wrap .time-select {
+/* 태어난 곳 드롭다운(native select) — 왼쪽 핀 아이콘 + 오른쪽 ▼.
+   (태어난 시간은 커스텀 드롭다운 SijinSelect — 아래 .sijin-dd 참고) */
+.input-wrap .city-select {
   appearance: none;
   -webkit-appearance: none;
   width: 100%;
@@ -245,6 +244,102 @@
 .sijin-link:hover { text-decoration: underline; }
 /* 시진을 골랐을 때 뜨는 정밀함 안내 — 조용히 한 줄 */
 .saju-time-note { margin-top: 8px; line-height: 1.55; }
+
+/* ── 시진 커스텀 드롭다운 (태어난 시간) ── */
+.sijin-dd { position: relative; }
+
+/* 트리거 — 선택 전엔 placeholder, 선택 후엔 시진명 + 일상어 두 줄 */
+.sijin-dd__trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  min-height: 52px;
+}
+.sijin-dd__ico { display: flex; color: var(--text-tertiary); flex-shrink: 0; }
+.sijin-dd__placeholder { flex: 1; color: var(--text-tertiary); }
+.sijin-dd__val { flex: 1; display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.sijin-dd__val-name { color: var(--text-primary); font-weight: var(--fw-medium); }
+.sijin-dd__val-daily { font-size: var(--fs-caption); color: var(--text-tertiary); }
+.sijin-dd__chev {
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+  transition: transform 0.18s ease;
+}
+.sijin-dd__chev--open { transform: rotate(180deg); }
+
+/* 팝오버 — 트리거 아래 떠서 폼을 밀지 않는다 */
+.sijin-dd__pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 40;
+  max-height: 340px;
+  overflow-y: auto;
+  padding: 6px;
+  background: var(--surface-2);
+  border: var(--border-width) solid var(--border-gold);
+  border-radius: var(--radius-card);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  animation: sijin-dd-in 0.16s ease;
+  scrollbar-width: thin;
+}
+@keyframes sijin-dd-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* 시간대 묶음 — 소제목 + 그 아래 항목들 */
+.sijin-dd__group { padding: 2px 0; }
+.sijin-dd__group-label {
+  display: block;
+  padding: 8px 12px 4px;
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  color: var(--lavender);
+  opacity: 0.85;
+}
+
+/* 항목 — 시진명(강조) + 일상어(보조). hover/선택 강조 */
+.sijin-dd__opt {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  background: none;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text-primary);
+  transition: background 0.12s ease;
+}
+.sijin-dd__opt:hover { background: var(--surface-select); }
+.sijin-dd__opt--plain { padding: 11px 12px; }
+.sijin-dd__opt-name { font-weight: var(--fw-medium); flex-shrink: 0; }
+.sijin-dd__opt-daily {
+  font-size: var(--fs-caption);
+  color: var(--text-tertiary);
+}
+.sijin-dd__opt-check { margin-left: auto; color: var(--gold); display: flex; align-self: center; }
+.sijin-dd__opt--on { background: var(--surface-select); }
+.sijin-dd__opt--on .sijin-dd__opt-name { color: var(--gold); }
+
+/* '시간 모름'과 12시진 사이 구분선 */
+.sijin-dd__div {
+  height: 1px;
+  margin: 6px 8px;
+  background: var(--border-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sijin-dd__pop { animation: none; }
+  .sijin-dd__chev { transition: none; }
+}
 
 /* 개인정보 안내 */
 .privacy {

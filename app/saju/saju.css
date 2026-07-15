@@ -75,9 +75,10 @@
 .input-wrap__icon svg { width: 18px; height: 18px; }
 .input-wrap .wl-input { padding-left: 42px; }
 
-/* 태어난 곳 드롭다운(select) — 앱과 동일하게 목록 선택. 왼쪽 핀 아이콘 + 오른쪽 ▼.
+/* 드롭다운(select) — 태어난 곳 + 태어난 시간(시진). 왼쪽 아이콘 + 오른쪽 ▼.
    높은 특이도(.input-wrap .city-select)로 .wl-input 의 background 단축속성을 확실히 덮는다. */
-.input-wrap .city-select {
+.input-wrap .city-select,
+.input-wrap .time-select {
   appearance: none;
   -webkit-appearance: none;
   width: 100%;
@@ -225,7 +226,7 @@
   padding: 2px 2px 0;
 }
 
-/* 12간지 시간표 트리거 링크 */
+/* 시진 ↔ 정확한 시각 토글 링크 */
 .sijin-link {
   align-self: flex-start;
   margin-top: 9px;
@@ -242,6 +243,8 @@
 }
 .sijin-link svg { width: 15px; height: 15px; }
 .sijin-link:hover { text-decoration: underline; }
+/* 시진을 골랐을 때 뜨는 정밀함 안내 — 조용히 한 줄 */
+.saju-time-note { margin-top: 8px; line-height: 1.55; }
 
 /* 개인정보 안내 */
 .privacy {
@@ -275,96 +278,6 @@
   color: var(--text-tertiary);
 }
 
-/* ----- 12간지 시간표 모달 ----- */
-.sijin-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-}
-.sijin-modal__backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(8, 9, 20, 0.66);
-  backdrop-filter: blur(1px);
-}
-.sijin-modal__card {
-  position: relative;
-  width: 100%;
-  max-width: 360px;
-  max-height: calc(100dvh - 48px);
-  overflow-y: auto;
-  padding: 20px;
-  background: var(--surface-1);
-  border: var(--border-width) solid var(--border-soft);
-  border-radius: var(--radius-card);
-  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.45);
-  animation: sijin-in var(--transition-slide);
-}
-@keyframes sijin-in {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: none; }
-}
-.sijin-modal__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 6px;
-}
-.sijin-modal__head h2 { color: var(--text-primary); }
-.sijin-modal__close {
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  background: var(--surface-1b);
-  color: var(--text-secondary);
-}
-.sijin-modal__close svg { width: 18px; height: 18px; }
-.sijin-modal__note { margin-bottom: 14px; }
-
-/* 12지지 표: 2열 그리드 */
-.sijin-grid {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px 10px;
-}
-.sijin-grid li {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  padding: 8px 10px;
-  background: var(--surface-1b);
-  border: var(--border-width) solid var(--border-input);
-  border-radius: var(--radius-chip-info);
-}
-.sijin-grid__name {
-  flex-shrink: 0;
-  font-size: var(--fs-body-s);
-  font-weight: var(--fw-medium);
-  color: var(--text-primary);
-}
-.sijin-grid__time {
-  margin-left: auto;
-  font-size: var(--fs-caption);
-  color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
-}
-@media (prefers-reduced-motion: reduce) {
-  .sijin-modal__card { animation: none; }
-}
 
 /* 저장 사주 확인 중 로딩(신규→폼 / 기존→결과) */
 .saju-checking {

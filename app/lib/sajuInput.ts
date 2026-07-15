@@ -19,7 +19,19 @@ export const SAJU_STORAGE_KEY = "wolune_saju_input";
 export async function saveSajuInput(input: SajuInput): Promise<void> {
   try {
     const uid = await ensureSignedIn();
-    await setDoc(doc(db, "users", uid), { sajuInput: input }, { merge: true });
+    // ⚠ merge:true 는 sajuInput 안의 필드까지 **병합**한다. 그래서 옵셔널 필드(time·city·
+    //   is_leap_month)가 없을 때 그냥 빼면(undefined → ignoreUndefinedProperties 가 제거)
+    //   기존 값이 그대로 남는다 — 편집으로 '시각→시간 모름'이나 '음력→양력'이 **반영되지 않는다.**
+    //   그래서 없는 옵셔널은 deleteField() 로 명시 삭제한다.
+    const sajuInput = {
+      date: input.date,
+      gender: input.gender,
+      calendar: input.calendar,
+      time: input.time ?? deleteField(),
+      city: input.city ?? deleteField(),
+      is_leap_month: input.is_leap_month ?? deleteField(),
+    };
+    await setDoc(doc(db, "users", uid), { sajuInput }, { merge: true });
   } catch {
     /* 저장 실패 — 무시(오프라인 캐시가 이후 동기화) */
   }

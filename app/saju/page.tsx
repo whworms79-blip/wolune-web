@@ -12,6 +12,7 @@ import {
   type SajuInput,
 } from "../lib/sajuInput";
 import { pad, parseTime, to12h } from "../lib/time";
+import { SIJIN, sijinOfTime } from "../lib/sijin";
 import { CITIES } from "../lib/cities";
 import { saveConsent } from "../lib/consent";
 import "./saju.css";
@@ -57,13 +58,6 @@ function ClockHint() {
     </svg>
   );
 }
-function XIcon() {
-  return (
-    <svg viewBox="0 0 24 24" {...ico}>
-      <path d="M6 6l12 12M18 6L6 18" />
-    </svg>
-  );
-}
 function MoonIcon({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" {...ico}>
@@ -82,15 +76,6 @@ function IntroMark() {
   );
 }
 
-const SIJIN = [
-  ["자시", "23:30~01:30"], ["축시", "01:30~03:30"],
-  ["인시", "03:30~05:30"], ["묘시", "05:30~07:30"],
-  ["진시", "07:30~09:30"], ["사시", "09:30~11:30"],
-  ["오시", "11:30~13:30"], ["미시", "13:30~15:30"],
-  ["신시", "15:30~17:30"], ["유시", "17:30~19:30"],
-  ["술시", "19:30~21:30"], ["해시", "21:30~23:30"],
-];
-
 export default function SajuInputPage() {
   const [birth, setBirth] = useState<DateValue>({ year: 1996, month: 3, day: 14 });
   // 위 생년월일은 예시(placeholder)일 뿐 — 사용자가 달력에서 실제로 고르기 전엔 제출을 막아
@@ -101,13 +86,16 @@ export default function SajuInputPage() {
   const [agreePrivacy, setAgreePrivacy] = useState(false);
   const [agreeAge, setAgreeAge] = useState(false);
   const agreed = agreePrivacy && agreeAge;
+  // 태어난 시간: 기본은 시진(sijinKey) 선택. "정확한 시각을 알아요" 토글로 분까지.
+  //   sijinKey === "" 면 미선택, "unknown" 이면 시간 모름.
+  //   exactMode 가 켜지면 birthTime(오전/오후 HH:MM)이 우선한다.
+  const [sijinKey, setSijinKey] = useState("");
+  const [exactMode, setExactMode] = useState(false);
   const [birthTime, setBirthTime] = useState("오전 11:11");
   const [birthPlace, setBirthPlace] = useState("서울");
   const [calendar, setCalendar] = useState<"solar" | "lunar">("solar");
   const [gender, setGender] = useState<"여성" | "남성">("여성");
-  const [unknownTime, setUnknownTime] = useState(false);
   const [leapMonth, setLeapMonth] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   // 저장된 사주 확인 중(폼/결과 갈림) — 확인 전엔 폼을 깜빡 보여주지 않도록.
   const [checking, setChecking] = useState(true);
@@ -143,11 +131,19 @@ export default function SajuInputPage() {
           setBirth({ year: +m[1], month: +m[2], day: +m[3] });
           setDateChosen(true);
         }
+        // 편집 복귀 역매핑: 저장된 시각이 시진 중간값과 정확히 일치하면 시진 모드로,
+        // 아니면 정확한 시각(exact) 모드로 되살린다.
         if (saved.time) {
-          setBirthTime(to12h(saved.time) || saved.time);
-          setUnknownTime(false);
+          const s = sijinOfTime(saved.time);
+          if (s) {
+            setSijinKey(s.key);
+            setExactMode(false);
+          } else {
+            setExactMode(true);
+            setBirthTime(to12h(saved.time) || saved.time);
+          }
         } else {
-          setUnknownTime(true);
+          setSijinKey("unknown");
         }
         if (saved.city) setBirthPlace(saved.city);
         setGender(saved.gender === "male" ? "남성" : "여성");
@@ -161,15 +157,17 @@ export default function SajuInputPage() {
     };
   }, [router]);
 
-  // 모달 ESC 닫기
-  useEffect(() => {
-    if (!modalOpen) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setModalOpen(false);
-    }
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [modalOpen]);
+  // ── 태어난 시간 → 엔진에 넘길 HH:MM ──
+  // exact 모드면 분까지 입력한 값, 아니면 고른 시진의 중간값. "시간 모름"이면 undefined(시주 제외).
+  const unknownTime = sijinKey === "unknown";
+  function resolveTime(): string | undefined {
+    if (unknownTime) return undefined;
+    if (exactMode) return parseTime(birthTime) || undefined;
+    const s = SIJIN.find((x) => x.key === sijinKey);
+    return s?.mid; // 중간값(HH:MM) — 진태양시 보정 후에도 같은 시진에 남는다(실측)
+  }
+  // 시간을 아직 안 정했으면(시진 미선택 && exact 아님) 제출을 막기 위한 플래그
+  const timeChosen = unknownTime || exactMode || sijinKey !== "";
 
   // 입력값을 엔진 형식으로 변환 → /saju/result로 이동(결과 페이지가 서버에서 엔진 호출)
   async function handleSubmit(e: React.FormEvent) {
@@ -182,7 +180,7 @@ export default function SajuInputPage() {
     }
     setBusy(true);
 
-    const time = unknownTime ? undefined : parseTime(birthTime) || undefined;
+    const time = resolveTime();
     const input: SajuInput = {
       date: `${birth.year}-${pad(birth.month)}-${pad(birth.day)}`,
       time, // 모름/미입력이면 생략(엔진 기본 00:00)
@@ -297,12 +295,37 @@ export default function SajuInputPage() {
             )}
           </div>
 
-          {/* 2. 태어난 시간 + 모름 칩 */}
+          {/* 2. 태어난 시간 — 기본은 시진 선택, 정확한 시각은 옵션 */}
           <div className="wl-field">
-            <label className="wl-field__label" htmlFor="birth-time">
+            <label className="wl-field__label" htmlFor="birth-sijin">
               태어난 시간
             </label>
-            <div className="time-row">
+
+            {/* 시진 선택(기본) — exact 모드가 아닐 때만 */}
+            {!exactMode && (
+              <div className="input-wrap">
+                <span className="input-wrap__icon" aria-hidden="true">
+                  <ClockIcon />
+                </span>
+                <select
+                  className="wl-input time-select"
+                  id="birth-sijin"
+                  value={sijinKey}
+                  onChange={(e) => setSijinKey(e.target.value)}
+                >
+                  <option value="" disabled>어느 시진에 태어나셨나요?</option>
+                  <option value="unknown">시간 모름</option>
+                  {SIJIN.map((s) => (
+                    <option key={s.key} value={s.key}>
+                      {s.name} · {s.daily}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* 정확한 시각(옵션) — 오전/오후 + HH:MM */}
+            {exactMode && (
               <div className="input-wrap">
                 <span className="input-wrap__icon" aria-hidden="true">
                   <ClockIcon />
@@ -311,28 +334,31 @@ export default function SajuInputPage() {
                   className="wl-input"
                   id="birth-time"
                   type="text"
-                  value={unknownTime ? "" : birthTime}
+                  value={birthTime}
                   onChange={(e) => setBirthTime(e.target.value)}
                   placeholder="예: 오전 11:11"
-                  disabled={unknownTime}
+                  autoFocus
                 />
               </div>
-              <button
-                type="button"
-                className={`wl-chip${unknownTime ? " wl-chip--selected" : ""}`}
-                aria-pressed={unknownTime}
-                onClick={() => setUnknownTime((v) => !v)}
-              >
-                모름
-              </button>
-            </div>
+            )}
+
+            {/* 토글: 시진 ↔ 정확한 시각 */}
             <button
               type="button"
               className="sijin-link"
-              onClick={() => setModalOpen(true)}
+              aria-pressed={exactMode}
+              onClick={() => setExactMode((v) => !v)}
             >
-              <ClockHint /> 12간지 시간표 보기
+              <ClockHint />
+              {exactMode ? "시진으로 고를게요" : "정확한 시각을 알아요"}
             </button>
+
+            {/* 시진을 골랐을 때: 정밀함으로 유도하는 안내(겁주지 않게) */}
+            {!exactMode && sijinKey !== "" && sijinKey !== "unknown" && (
+              <p className="wl-caption wl-text-tertiary saju-time-note">
+                시진만으로도 볼 수 있어요. 정확한 시각을 아시면 진태양시로 더 정밀하게 계산해요.
+              </p>
+            )}
           </div>
 
           {/* 3. 태어난 곳 — 앱과 동일하게 목록에서만 선택(엔진이 아는 도시 → 진태양시 보정 정확) */}
@@ -440,7 +466,7 @@ export default function SajuInputPage() {
             <button
               type="submit"
               className="wl-btn wl-btn--primary wl-btn--moonlit"
-              disabled={busy || !agreed}
+              disabled={busy || !agreed || !timeChosen}
             >
               <MoonIcon /> {busy ? "계산하는 중…" : "내 사주 보기"}
             </button>
@@ -454,48 +480,6 @@ export default function SajuInputPage() {
           </div>
         </form>
       </div>
-
-      {/* 12간지 시간표 모달 */}
-      {modalOpen && (
-        <div className="sijin-modal">
-          <div
-            className="sijin-modal__backdrop"
-            onClick={() => setModalOpen(false)}
-          />
-          <div
-            className="sijin-modal__card"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="sijin-title"
-          >
-            <div className="sijin-modal__head">
-              <h2 className="wl-title-m" id="sijin-title">
-                12간지 시간표
-              </h2>
-              <button
-                type="button"
-                className="sijin-modal__close"
-                aria-label="닫기"
-                onClick={() => setModalOpen(false)}
-              >
-                <XIcon />
-              </button>
-            </div>
-            <p className="wl-caption wl-text-tertiary sijin-modal__note">
-              시간대는 대략값이에요 — 진태양시 보정 전 기준이라, 시진 경계
-              근처라면 앞뒤로 함께 살펴보세요.
-            </p>
-            <ul className="sijin-grid">
-              {SIJIN.map(([name, time]) => (
-                <li key={name}>
-                  <span className="sijin-grid__name">{name}</span>
-                  <span className="sijin-grid__time">{time}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
     </main>
   );
 }

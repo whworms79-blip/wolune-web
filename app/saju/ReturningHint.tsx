@@ -9,7 +9,7 @@
 // 앱(app/lib/screens/onboarding_screen.dart 의 _ReturningHint)과 문구·동작을 일치시킨다.
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { isAnonymous, linkGoogle, onAuthChange } from "../lib/firebase";
+import { confirmUid, isAnonymous, linkGoogle, onAuthChange } from "../lib/firebase";
 import { chartQuery, loadSajuInput } from "../lib/sajuInput";
 import { hasSignedInBefore, lastProvider, type Provider } from "../lib/returning";
 import { KakaoButton } from "../lib/LinkAccount";
@@ -24,6 +24,8 @@ export default function ReturningHint() {
   //   여기가 새 데이터를 만들려는 바로 그 순간이라, 실은 웰컴보다 이 자리가 맞다.
   const [known, setKnown] = useState(false);
   const [prov, setProv] = useState<Provider | null>(null);
+  // 로그인은 됐는데 그 계정에 저장된 사주가 없을 때 — 신규 회원에게 건네는 안내로 바꾼다.
+  const [newUser, setNewUser] = useState(false);
 
   useEffect(() => onAuthChange(() => setAnon(isAnonymous())), []);
   useEffect(() => {
@@ -31,9 +33,7 @@ export default function ReturningHint() {
     setProv(lastProvider());
   }, []);
 
-  if (!anon) return null;
-
-  // 로그인에 성공하면 옛 사주가 돌아온다 → 여기서 더 입력할 이유가 없다.
+  // 로그인에 성공하면 옛 사주가 돌아온다 → 있으면 결과 화면으로, 없으면(신규) 폼에 머문다.
   async function signInGoogle() {
     if (busy) return;
     setBusy(true);
@@ -48,15 +48,43 @@ export default function ReturningHint() {
       setError("로그인하지 못했어요. 잠시 후 다시 시도해 주세요.");
       return;
     }
+
+    // ── 옛 계정으로 전환됐다면 — 이어붙이기(CarryOverDialog)가 순서의 주인이다. ──
+    // 그쪽이 병합/충돌을 처리한 뒤 화면을 새로 그리고(reload), 새로고침된 입력 페이지가
+    // 저장된 사주를 스스로 결과로 넘긴다 → **이어붙이기가 먼저, 결과는 그 다음.**
+    // 여기서 결과로 직접 보내면 이어붙이기와 순서가 꼬이므로 넘기지 않는다.
+    // (옛 계정도 비어 새로고침이 없는 경우엔 아래에서 폼에 머문다.)
+    if (res === "switchedToExisting") {
+      setBusy(false);
+      setAnon(false); // 더는 익명이 아니다 — 안내를 감추고 CarryOverDialog 에 맡긴다
+      return;
+    }
+
+    // ── linked — uid 는 그대로(익명 승격 또는 재로그인, 이어붙이기 없음). ──
+    // ★ 저장된 사주를 읽기 전에 currentUser(uid) 확정을 명시적으로 기다린다.
+    await confirmUid();
     const saved = await loadSajuInput();
     if (saved) {
       router.replace(`/saju/result?${chartQuery(saved).toString()}`);
       return;
     }
-    // 로그인은 했는데 사주가 없다(그 계정으로 저장한 적 없음) → 안내만 감추고 계속 입력.
+    // 로그인은 했는데 사주가 없다(그 계정으로 저장한 적 없음) → 신규 안내로 바꾸고 계속 입력.
     setBusy(false);
-    setAnon(false);
+    setNewUser(true);
   }
+
+  // 신규 회원 — 로그인은 됐지만 저장된 사주가 없다. 입력을 이어가도록 담백히 안내.
+  if (newUser) {
+    return (
+      <div className="returning-hint">
+        <p className="wl-body-s returning-hint__text">
+          처음 오셨네요. 아래에 정보를 입력하시면 사주를 볼 수 있어요.
+        </p>
+      </div>
+    );
+  }
+
+  if (!anon) return null;
 
   return (
     <div className={`returning-hint${known ? " returning-hint--known" : ""}`}>

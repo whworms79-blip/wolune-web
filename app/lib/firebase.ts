@@ -80,6 +80,15 @@ onAuthStateChanged(auth, (u) => {
   signInPromise = u ? Promise.resolve(u.uid) : null;
 });
 
+// 로그인 직후, **지금 로그인된 계정의 uid가 확정될 때까지** 기다린 뒤 돌려준다.
+// ensureSignedIn 과 달리 익명 계정을 새로 만들지 않는다 — "지금 누구인지"만 확인한다.
+// 오늘(2026-07-15) uid 캐시 사고를 겪었기에, 로그인 후 저장된 사주를 읽기 **전에** 이 확정을
+// 명시적으로 거친다(엉뚱한 계정 데이터를 믿고 잘못된 결과로 보내는 일을 막는다).
+export async function confirmUid(): Promise<string | null> {
+  await auth.authStateReady();
+  return auth.currentUser?.uid ?? null;
+}
+
 // 익명 로그인 보장. 아직 로그인 이력이 없을 때만 익명 로그인을 띄운다.
 // (한 번 정해진 뒤엔 위 리스너가 uid 변화를 반영하므로, 여기 캐시는 항상 '지금 계정'이다.)
 export function ensureSignedIn(): Promise<string> {

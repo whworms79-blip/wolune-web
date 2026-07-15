@@ -5,7 +5,6 @@ import Link from "next/link";
 import DateField, { type DateValue } from "../saju/DateField";
 import {
   loadSajuInput,
-  saveSajuInput,
   chartQuery,
   type SajuInput,
 } from "../lib/sajuInput";
@@ -17,7 +16,6 @@ import {
 } from "../lib/compatibility";
 import CompatResult from "./CompatResult";
 import { pad, parseTime, to12h } from "../lib/time";
-import { useConsent } from "../lib/ConsentGate";
 import { CITIES } from "../lib/cities";
 import "./compatibility.css";
 
@@ -265,7 +263,6 @@ type Phase =
   | { status: "error" };
 
 export default function CompatibilityPage() {
-  const { requestConsent } = useConsent();
   const [me, setMe] = useState<PersonState>(DEFAULT_ME);
   const [you, setYou] = useState<PersonState>(DEFAULT_YOU);
   const [phase, setPhase] = useState<Phase>({ status: "form" });
@@ -293,11 +290,10 @@ export default function CompatibilityPage() {
 
     const inA = toInput(me);
     const inB = toInput(you);
-    // 내 정보 저장은 '새 수집'이라 동의가 필요하다. 동의하지 않으면 저장만 건너뛰고
-    // 궁합 계산·표시는 그대로 진행한다(읽기·계산은 막지 않는다).
-    void requestConsent().then((ok) => {
-      if (ok) void saveSajuInput(inA); // 다음 방문 자동 채움(백그라운드)
-    });
+    // ⚠ 궁합은 "나"를 **저장하지 않는다.** 자동채움(loadSajuInput)은 읽기만 하고,
+    //   여기서 saveSajuInput 을 하면 사용자가 "나"를 부모님 등 다른 사람으로 바꿔 궁합을 볼 때
+    //   그 임시 값이 **내 사주를 덮어쓴다.** 내 사주 저장은 오직 /saju 에서만.
+    //   (저장을 안 하니 동의도 묻지 않는다 — 계산·표시는 읽기라 원래 동의 없이 진행했다.)
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 9000);

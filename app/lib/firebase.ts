@@ -198,15 +198,31 @@ export async function linkGoogle(): Promise<GoogleLinkResult> {
 // ── 카카오 로그인 ──
 // Firebase가 카카오를 기본 지원하지 않아, 서버(Netlify 함수)가 카카오를 검증하고
 // 커스텀 토큰을 발급한다. 첫 연결이면 서버가 지금 익명 uid를 그대로 승격 → 데이터 보존.
-export const KAKAO_JS_KEY = "13cd958afcc9a06604ec8fcb69404d82"; // 공개 키(도메인 등록으로 보호)
+//
+// ⚠️ 인가(authorize)의 client_id 와 함수의 토큰 교환(/oauth/token) client_id 는 **반드시
+//    같은 REST API 키**여야 한다. 예전엔 인가가 JS 키(13…), 교환이 REST 키(env)를 써서
+//    client_id 가 어긋났고, 카카오가 "다른 client_id 로 발급된 코드"라며 교환을 거부했다(KOE320)
+//    → "연결에 실패했어요". 이제 양쪽 다 REST API 키로 통일한다.
+//
+// client_id 는 브라우저 리다이렉트 URL 에 노출되는 **공개값**이다(비밀 아님 — redirect_uri
+// 등록으로 보호). 그래서 NEXT_PUBLIC_ 으로 빼 관리를 일원화한다. 함수(교환)는 비공개
+// KAKAO_REST_API_KEY 를 계속 쓰되, **두 env 에 같은 REST 키 값**을 넣어야 한다.
+const KAKAO_REST_KEY = process.env.NEXT_PUBLIC_KAKAO_REST_KEY ?? "";
 const KAKAO_AUTH_FN = "/.netlify/functions/kakao-auth";
 export const kakaoRedirectUri = () =>
   `${window.location.origin}/auth/kakao/callback`;
 
 // 카카오 인가 페이지로 이동(리다이렉트 방식 — JS SDK v2는 암묵적 토큰 흐름이 없다)
 export function startKakaoLogin(): void {
+  // 키 미설정을 조용히 넘기지 않는다 — client_id 없이 인가하면 KOE101 로 깨진다(교훈: 실패는 시끄럽게).
+  if (!KAKAO_REST_KEY) {
+    console.error(
+      "카카오 로그인 불가: NEXT_PUBLIC_KAKAO_REST_KEY 미설정 (KAKAO_REST_API_KEY 와 같은 REST 키를 넣어야 함)",
+    );
+    return;
+  }
   const p = new URLSearchParams({
-    client_id: KAKAO_JS_KEY,
+    client_id: KAKAO_REST_KEY,
     redirect_uri: kakaoRedirectUri(),
     response_type: "code",
   });

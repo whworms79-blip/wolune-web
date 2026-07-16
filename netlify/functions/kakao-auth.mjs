@@ -173,6 +173,9 @@ export default async (req) => {
       });
       const tok = await r.json();
       if (!r.ok || !tok.access_token) {
+        // 진단: 정확한 카카오 에러코드를 함수 로그에 남긴다(KOE006=리다이렉트 미등록,
+        //   KOE320=코드/클라이언트 불일치 등). 카카오 에러 객체엔 비밀값이 없다.
+        console.error("[kakao] token exchange failed", r.status, JSON.stringify(tok));
         return json({ error: "카카오 토큰 교환 실패", detail: tok }, 401);
       }
       kakaoToken = tok.access_token;
@@ -184,6 +187,7 @@ export default async (req) => {
     });
     const me = await meRes.json();
     if (!meRes.ok || !me.id) {
+      console.error("[kakao] user/me failed", meRes.status, JSON.stringify(me));
       return json({ error: "카카오 사용자 확인 실패", detail: me }, 401);
     }
     const kakaoId = String(me.id);

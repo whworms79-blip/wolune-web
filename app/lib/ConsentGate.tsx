@@ -20,6 +20,7 @@ import {
 } from "react";
 import Link from "next/link";
 import { hasCurrentConsent, saveConsent } from "./consent";
+import { onAuthChange } from "./firebase";
 
 interface ConsentApi {
   /** 저장 직전에 호출. 이미 동의했으면 즉시 true. 아니면 시트를 띄우고 결과를 기다린다. */
@@ -46,13 +47,29 @@ export function ConsentProvider({ children }: { children: React.ReactNode }) {
   const [saving, setSaving] = useState(false);
   const resolverRef = useRef<((ok: boolean) => void) | null>(null);
 
+  // 로그인/로그아웃/전환으로 **uid 가 바뀔 때마다** 지금 계정 기준으로 동의를 다시 확인한다.
+  //
+  // ★ 왜 필요한가: 이 Provider 는 루트 레이아웃 상주라 클라이언트 이동으론 재마운트되지 않는다.
+  //   예전엔 마운트 때 딱 한 번만 확인해서, 익명 상태에서 잡힌 consented=false 가 로그인 뒤에도
+  //   남았다. 그래서 **이미 동의한 계정**으로 로그인했는데도 동의 시트가 떴다(특히 카카오 —
+  //   콜백이 새 페이지라 익명 상태에서 마운트 → false 고정 → 로그인돼도 재확인 없음).
+  //   판정은 구글·카카오 공통으로 여기 한 곳에서만 한다(로그인 경로마다 따로 손대지 않게).
+  //
+  // onAuthChange(onAuthStateChanged)는 구독 즉시 현재 사용자로 한 번, 이후 전환마다 발화한다.
+  // 전환 순간 consented 를 null(미확인)로 되돌려, 재확인이 끝나기 전 요청도 지금 계정 기준으로
+  // 새로 읽게 한다(낡은 값 사용 방지). 신규·미동의 계정은 여전히 false → 시트 정상 노출(법적 요건).
   useEffect(() => {
     let alive = true;
-    hasCurrentConsent().then((ok) => {
-      if (alive) setConsented(ok);
+    const unsub = onAuthChange(() => {
+      if (!alive) return;
+      setConsented(null);
+      hasCurrentConsent().then((ok) => {
+        if (alive) setConsented(ok);
+      });
     });
     return () => {
       alive = false;
+      unsub();
     };
   }, []);
 

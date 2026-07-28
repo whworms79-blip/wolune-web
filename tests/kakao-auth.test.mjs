@@ -7,7 +7,10 @@
 // 원래 버그: `if (!r.ok) return null` — 500·403·429 를 404(첫 연결)와 똑같이 취급했다.
 //   그래서 Firestore 가 잠깐 흔들리면 곧바로 매핑을 지금의 빈 익명 uid 로 덮어썼다.
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { claimMapping, getMapping } from "./kakao-auth.mjs";
+// ⚠ 이 시험은 **함수 디렉터리 밖**에 둔다. Netlify 는 netlify/functions/ 안의 모든 파일을
+//   함수로 취급하는데, `kakao-auth.test` 는 이름에 점이 있어 함수명 규칙(영숫자·하이픈·밑줄)에
+//   걸려 **배포가 통째로 실패한다.** 로컬 build·vitest·tsc 는 전부 통과하므로 배포해야만 드러난다.
+import { claimMapping, getMapping } from "../netlify/functions/kakao-auth.mjs";
 
 const PROJECT = "wolune-d2268";
 const KAKAO_ID = "1234567890";

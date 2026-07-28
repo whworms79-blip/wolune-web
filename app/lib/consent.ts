@@ -26,7 +26,31 @@ export interface Consent {
   version: string; // 동의한 방침 버전
 }
 
-export async function saveConsent(): Promise<void> {
+// 동의 판정 결과.
+//
+// ★ **"모름"과 "동의 안 함"은 다르다.** 예전엔 읽기 실패를 catch 로 잡아 `false`(=미동의)로
+//   뭉갰다. 그런데 uid 가 막 바뀐 직후엔 옛 uid 문서 읽기가 보안 규칙에 걸려
+//   permission-denied 로 떨어진다 — 그걸 "동의 안 했다"로 읽으면 **이미 동의한 사람에게
+//   시트가 뜬다.** 그래서 세 번째 상태를 둔다.
+//
+// ★ 그리고 uid 를 **결과에 함께 싣는다.** 이 답이 어느 계정에 대한 것인지 값 자체가 알고
+//   있어야, 늦게 도착한 남의 계정 답이 지금 계정의 답을 덮어쓰는 사고를 막을 수 있다
+//   (ConsentGate 가 착지 시점에 대조한다).
+export type ConsentStatus = "yes" | "no" | "unknown";
+export interface ConsentVerdict {
+  uid: string;
+  status: ConsentStatus;
+}
+
+// 동의를 남긴다. **성공 여부를 돌려준다.**
+//
+// 예전엔 실패를 빈 catch 로 삼키고 void 를 반환했다. 그래서 저장이 실패해도 화면은
+// "동의됨"으로 굴고(그 세션 내내 시트가 안 뜸), 다음 전체 페이지 로드에서야 시트가
+// 되살아났다 — 원인을 찾기 지독히 어려운 모양이다. 실패는 시끄러워야 한다(교훈 6).
+//
+// ⚠ uid 는 여기서 ensureSignedIn 으로 구한다. **저장하는 순간**이니 계정이 없으면 만드는 게
+//   맞다 — 계정 생성은 쓰기 경로의 일이다(읽기 경로인 readConsent 에서는 뺐다).
+export async function saveConsent(): Promise<boolean> {
   try {
     const uid = await ensureSignedIn();
     const consent: Consent = {
@@ -36,27 +60,41 @@ export async function saveConsent(): Promise<void> {
       version: CONSENT_VERSION,
     };
     await setDoc(doc(db, "users", uid), { consent }, { merge: true });
-  } catch {
-    /* 저장 실패해도 사주 계산은 막지 않는다(오프라인 캐시가 이후 동기화) */
+    return true;
+  } catch (e) {
+    console.error("[consent] 동의 저장 실패", e);
+    return false;
   }
 }
 
 // 이 동의 기록이 지금도 유효한가. 최신 버전일 필요는 없고, REQUIRE_RECONSENT_SINCE 이상이면 된다.
 // (버전은 YYYY-MM-DD 라 문자열 비교가 곧 날짜 비교다.)
 //
-// ★ 동의 시트 판정(hasCurrentConsent)과 로그인 시 이관 판정(carryOver)이 **같은 기준**을
+// ★ 동의 시트 판정(readConsent)과 로그인 시 이관 판정(carryOver)이 **같은 기준**을
 //   써야 한다. 한쪽만 다르면 "이관은 했는데 시트는 뜨는" 식의 어긋남이 난다. 그래서 여기 하나로.
 export function isConsentValid(c: Consent | null | undefined): boolean {
   return !!c?.privacy && !!c?.age14 && (c?.version ?? "") >= REQUIRE_RECONSENT_SINCE;
 }
 
-// 현재 로그인된 uid 에 유효한 동의가 있는지.
-export async function hasCurrentConsent(): Promise<boolean> {
+// **특정 uid** 의 동의를 읽는다.
+//
+// ★ uid 를 인자로 받는 게 핵심이다. 예전엔 이 함수가 ensureSignedIn 으로 uid 를 스스로
+//   구했는데, 그러면 "어느 계정을 읽었는지"가 await 가 풀리는 시점에 정해져 호출자가 알 수
+//   없었다. 로그아웃→재로그인처럼 uid 가 연달아 바뀌는 길에서, 호출자는 돌아온 답이 지금
+//   계정에 대한 것인지 남은 계정에 대한 것인지 구분하지 못했다.
+//
+// ★ 부수 효과 제거: 예전엔 **동의를 확인하는 코드가 익명 계정을 만들어냈다**(ensureSignedIn).
+//   판정은 읽기다. 계정 생성은 saveConsent 쪽에 둔다.
+export async function readConsent(uid: string): Promise<ConsentVerdict> {
   try {
-    const uid = await ensureSignedIn();
     const snap = await getDoc(doc(db, "users", uid));
-    return isConsentValid(snap.data()?.consent as Consent | undefined);
-  } catch {
-    return false;
+    return {
+      uid,
+      status: isConsentValid(snap.data()?.consent as Consent | undefined) ? "yes" : "no",
+    };
+  } catch (e) {
+    // 읽지 못한 것뿐이다 — "동의 안 함"으로 단정하지 않는다.
+    console.error("[consent] 동의 조회 실패", uid, e);
+    return { uid, status: "unknown" };
   }
 }

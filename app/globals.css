@@ -423,6 +423,13 @@ a {
   color: var(--text-tertiary);
 }
 .consent-sheet__later:hover { color: var(--text-secondary); }
+/* 동의 저장 실패 안내 — 조용히 실패하지 않는다(교훈 6). 겁주지 않는 톤으로 한 줄만. */
+.consent-sheet__error {
+  margin-top: 14px;
+  font-size: var(--fs-body-s);
+  line-height: 1.6;
+  color: var(--rose);
+}
 
 /* 동의 체크박스 — saju.css 와 동일(시트에서도 쓰이므로 전역에 둔다) */
 .consent { display: flex; flex-direction: column; gap: 10px; }

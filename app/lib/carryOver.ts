@@ -147,8 +147,11 @@ export async function carryConsentToCurrent(anon: Consent | null): Promise<void>
     const snap = await getDoc(doc(db, "users", u.uid));
     if (isConsentValid(snap.data()?.consent as Consent | undefined)) return; // 이미 유효
     await setDoc(doc(db, "users", u.uid), { consent: anon }, { merge: true });
-  } catch {
-    /* 실패해도 로그인은 유효 — 최악의 경우 시트가 한 번 더 뜰 뿐 데이터 손실은 없다 */
+  } catch (e) {
+    /* 실패해도 로그인은 유효 — 최악의 경우 시트가 한 번 더 뜰 뿐 데이터 손실은 없다.
+       다만 조용히 넘기지는 않는다: "시트가 또 뜬다"는 신고가 들어왔을 때 여기가 원인인지
+       로그로 가릴 수 있어야 한다(교훈 6). */
+    console.error("[consent] 동의 이관 실패", e);
   }
 }
 

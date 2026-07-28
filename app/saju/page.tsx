@@ -83,6 +83,8 @@ export default function SajuInputPage() {
   // 남의 생일이 조용히 내 사주로 저장·전파되는 것을 방지한다.
   const [dateChosen, setDateChosen] = useState(false);
   const [showDateHint, setShowDateHint] = useState(false);
+  // 동의 저장이 실패했을 때 — 조용히 넘어가지 않고 여기서 다시 시도하게 한다.
+  const [consentFailed, setConsentFailed] = useState(false);
   // 개인정보 수집·이용 동의(필수) — 실제로 데이터를 저장하는 순간(첫 제출)에 한 번만 받는다.
   const [agreePrivacy, setAgreePrivacy] = useState(false);
   const [agreeAge, setAgreeAge] = useState(false);
@@ -193,7 +195,15 @@ export default function SajuInputPage() {
     };
 
     // 동의 기록을 먼저 남기고(입증용), 그 다음에 사주를 저장한다.
-    await saveConsent();
+    //
+    // ★ 동의 저장에 실패하면 사주도 저장하지 않는다 — 동의 입증 기록 없이 생년월일·출생지를
+    //   남기지 않기 위해서다. 예전엔 실패가 조용히 삼켜져 그대로 진행됐다.
+    //   단 **막지는 않는다**: 폼에 그대로 머물며 인라인 안내와 함께 다시 시도할 수 있다.
+    if (!(await saveConsent())) {
+      setConsentFailed(true);
+      setBusy(false);
+      return;
+    }
     await saveSajuInput(input); // 홈(/home)에서 매번 재입력 없이 불러오도록 저장
     router.push(`/saju/result?${chartQuery(input).toString()}`);
   }
@@ -452,8 +462,14 @@ export default function SajuInputPage() {
               className="wl-btn wl-btn--primary wl-btn--moonlit"
               disabled={busy || !agreed || !timeChosen}
             >
-              <MoonIcon /> {busy ? "계산하는 중…" : "내 사주 보기"}
+              <MoonIcon />{" "}
+              {busy ? "계산하는 중…" : consentFailed ? "다시 시도" : "내 사주 보기"}
             </button>
+            {consentFailed && (
+              <p className="saju-cta__note" role="alert">
+                저장하지 못했어요. 잠시 후 다시 시도해 주세요.
+              </p>
+            )}
             {/* 비활성 사유를 은은하게 알려준다(동의 → 날짜 순으로 한 줄만) */}
             {!busy && !agreed && (
               <p className="saju-cta__note">위 두 가지에 동의하시면 사주를 봐드릴게요.</p>

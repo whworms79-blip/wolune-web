@@ -19,8 +19,8 @@ import {
   useState,
 } from "react";
 import Link from "next/link";
-import { hasCurrentConsent, saveConsent } from "./consent";
-import { onAuthChange } from "./firebase";
+import { readConsent, saveConsent, type ConsentStatus } from "./consent";
+import { ensureSignedIn, onAuthChange } from "./firebase";
 
 interface ConsentApi {
   /** 저장 직전에 호출. 이미 동의했으면 즉시 true. 아니면 시트를 띄우고 결과를 기다린다. */
@@ -39,13 +39,17 @@ export function useConsent(): ConsentApi {
 }
 
 export function ConsentProvider({ children }: { children: React.ReactNode }) {
-  // null = 아직 확인 전
-  const [consented, setConsented] = useState<boolean | null>(null);
+  // "unknown" = 아직 모른다(확인 전이거나 읽기 실패). "no" 와 구분한다 — 아래 정책 참고.
+  const [status, setStatus] = useState<ConsentStatus>("unknown");
   const [open, setOpen] = useState(false);
   const [agreePrivacy, setAgreePrivacy] = useState(false);
   const [agreeAge, setAgreeAge] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
   const resolverRef = useRef<((ok: boolean) => void) | null>(null);
+  // 지금 계정 — onAuthChange 가 알려준 **가장 마지막** uid 를 동기적으로 담아둔다.
+  // 판정이 돌아왔을 때 "이 답이 지금 계정 것인가"를 가리는 기준이다.
+  const currentUidRef = useRef<string | null>(null);
 
   // 로그인/로그아웃/전환으로 **uid 가 바뀔 때마다** 지금 계정 기준으로 동의를 다시 확인한다.
   //
@@ -60,11 +64,27 @@ export function ConsentProvider({ children }: { children: React.ReactNode }) {
   // 새로 읽게 한다(낡은 값 사용 방지). 신규·미동의 계정은 여전히 false → 시트 정상 노출(법적 요건).
   useEffect(() => {
     let alive = true;
-    const unsub = onAuthChange(() => {
+    const unsub = onAuthChange((u) => {
       if (!alive) return;
-      setConsented(null);
-      hasCurrentConsent().then((ok) => {
-        if (alive) setConsented(ok);
+      const uid = u?.uid ?? null;
+      currentUidRef.current = uid; // ★ 동기적으로 먼저 갱신 — 착지 대조의 기준점
+      setStatus("unknown");
+      // 로그아웃 상태에선 읽지 않는다. (예전엔 여기서 hasCurrentConsent 가
+      //  ensureSignedIn 을 불러 **판정이 익명 계정을 만들어냈다.**)
+      if (!uid) return;
+      readConsent(uid).then((v) => {
+        if (!alive) return;
+        // ★★ 이 답이 **지금 계정** 것일 때만 반영한다.
+        //
+        // 로그아웃→재로그인은 uid 가 null → 새 익명 A2 → 카카오 X 로 연달아 바뀌고,
+        // 발화마다 뜬 판정들의 완료 순서는 보장되지 않는다. 게다가 A2 판정은 uid 가 X 로
+        // 바뀐 뒤 옛 문서 읽기가 보안 규칙에 걸려 **늦게** 실패하는 경향이 있다.
+        // 예전엔 늦게 착지한 답이 이겨서, 이미 동의한 계정에 시트가 다시 떴다.
+        //
+        // 이 한 줄로 판정 기준이 "언제 도착했나" → "누구에 대한 답인가" 로 바뀐다.
+        // 착지 순서가 어떻든 결과가 같아진다(확률을 낮추는 게 아니라 변수를 없앤다).
+        if (v.uid !== currentUidRef.current) return;
+        setStatus(v.status);
       });
     });
     return () => {
@@ -76,26 +96,36 @@ export function ConsentProvider({ children }: { children: React.ReactNode }) {
   const openSheet = useCallback(() => {
     setAgreePrivacy(false);
     setAgreeAge(false);
+    setSaveFailed(false);
     setOpen(true);
   }, []);
 
+  // 저장 직전 게이트 — **엄격하게.** "yes" 가 아니면 통과시키지 않는다.
+  // "unknown"(읽기 실패 등)이면 지금 한 번 더 읽어보고, 그래도 모르면 시트를 띄운다.
+  // 동의를 확인하지 못한 채로 개인정보를 저장하지 않는다(법적 요건).
   const requestConsent = useCallback(async (): Promise<boolean> => {
-    // 확인 전이면 지금 확인
-    const ok = consented ?? (await hasCurrentConsent());
-    if (ok) {
-      setConsented(true);
-      return true;
+    if (status === "yes") return true;
+    if (status === "unknown") {
+      // 저장하려는 순간이라 계정이 없으면 만든다(쓰기 경로).
+      const uid = currentUidRef.current ?? (await ensureSignedIn());
+      const v = await readConsent(uid);
+      // 여기서도 같은 대조 — 재확인하는 사이에 계정이 또 바뀌었을 수 있다.
+      if (v.uid === currentUidRef.current) setStatus(v.status);
+      if (v.status === "yes") return true;
     }
     openSheet();
     return new Promise<boolean>((resolve) => {
       resolverRef.current = resolve;
     });
-  }, [consented, openSheet]);
+  }, [status, openSheet]);
 
+  // 홈 진입용 부드러운 권유 — **보수적으로.** 결과를 기다리지 않는다(닫아도 그만).
+  // ★ 모를 땐 조르지 않는다. 읽기 실패를 "동의 안 함"으로 오해해 시트를 띄우는 것이
+  //   바로 이번 버그의 증상이었다. 확정된 "no" 일 때만 권한다.
   const promptIfNeeded = useCallback(() => {
-    // 홈 진입용 — 결과를 기다리지 않는다(닫아도 그만)
+    if (status !== "no") return;
     void requestConsent();
-  }, [requestConsent]);
+  }, [status, requestConsent]);
 
   function settle(ok: boolean) {
     setOpen(false);
@@ -106,9 +136,17 @@ export function ConsentProvider({ children }: { children: React.ReactNode }) {
   async function onAgree() {
     if (saving) return;
     setSaving(true);
-    await saveConsent();
-    setConsented(true);
+    setSaveFailed(false);
+    const ok = await saveConsent();
     setSaving(false);
+    if (!ok) {
+      // ★ 저장 실패 — 시트를 닫지 않고 settle 도 부르지 않는다.
+      //   저장을 기다리던 호출부가 "동의됨"으로 오해하고 진행하면, 동의 기록 없이
+      //   개인정보가 저장된다. 사용자는 다시 시도하거나 "나중에"로 빠져나갈 수 있다.
+      setSaveFailed(true);
+      return;
+    }
+    setStatus("yes");
     settle(true);
   }
 
@@ -177,13 +215,18 @@ export function ConsentProvider({ children }: { children: React.ReactNode }) {
               </label>
             </div>
 
+            {saveFailed && (
+              <p className="consent-sheet__error" role="alert">
+                저장하지 못했어요. 잠시 후 다시 시도해 주세요.
+              </p>
+            )}
             <button
               type="button"
               className="wl-btn wl-btn--primary consent-sheet__cta"
               disabled={!agreed || saving}
               onClick={onAgree}
             >
-              {saving ? "저장하는 중…" : "동의하고 계속"}
+              {saving ? "저장하는 중…" : saveFailed ? "다시 시도" : "동의하고 계속"}
             </button>
             <button
               type="button"

@@ -89,17 +89,33 @@ async function accessToken() {
 const mapUrl = (projectId, kakaoId) =>
   `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/kakaoUsers/${kakaoId}`;
 
-async function getMapping(projectId, kakaoId, tok) {
+// ★ 404(= 첫 연결)와 그 밖의 실패를 반드시 구분한다.
+//   예전엔 `if (!r.ok) return null` 이라 500·403·429 같은 **일시적 오류까지 "첫 연결"로** 읽었다.
+//   그러면 호출부가 곧바로 매핑을 지금의 빈 익명 uid로 덮어써서, 진짜 계정이 고아가 되고
+//   이후 그 카카오 아이디의 모든 로그인이 새 빈 계정으로 갔다(사주·무드·동의 전부 유실, 복구는 수동).
+//   매핑을 모르는 채로 쓰느니 로그인을 실패시키는 게 낫다 — 실패는 시끄러워야 한다.
+// (export 는 테스트용 — Netlify 는 default·config 만 본다)
+export async function getMapping(projectId, kakaoId, tok) {
   const r = await fetch(mapUrl(projectId, kakaoId), {
     headers: { authorization: `Bearer ${tok}` },
   });
-  if (!r.ok) return null; // 404 = 첫 연결
+  if (r.status === 404) return null; // 여기서만 "매핑 없음"으로 단정한다
+  if (!r.ok) {
+    const body = await r.text().catch(() => "");
+    console.error("[kakao] 매핑 조회 실패", r.status, body.slice(0, 500));
+    throw new Error(`매핑 조회 실패(${r.status})`);
+  }
   const d = await r.json();
   return d?.fields?.uid?.stringValue ?? null;
 }
 
-async function setMapping(projectId, kakaoId, uid, tok) {
-  await fetch(mapUrl(projectId, kakaoId), {
+// 첫 연결 등록. **이미 있으면 덮어쓰지 않는다**(`currentDocument.exists=false`).
+//   위의 판정이 어떤 이유로든 틀려도 기존 주인을 지우는 일이 구조적으로 불가능해진다.
+//   경합으로 그 사이 누가 먼저 등록했다면 그쪽을 따른다.
+// 쓰기 실패도 삼키지 않는다 — 조용히 넘어가면 매핑이 안 남아, 다음 로그인 때 다시
+//   "첫 연결"로 판정돼 다른 익명 uid에 붙는다. 같은 유실이 시간차로 일어날 뿐이다.
+export async function claimMapping(projectId, kakaoId, uid, tok) {
+  const r = await fetch(`${mapUrl(projectId, kakaoId)}?currentDocument.exists=false`, {
     method: "PATCH",
     headers: { authorization: `Bearer ${tok}`, "content-type": "application/json" },
     body: JSON.stringify({
@@ -109,6 +125,17 @@ async function setMapping(projectId, kakaoId, uid, tok) {
       },
     }),
   });
+  if (r.ok) return uid;
+
+  // 선점 실패 — 이미 주인이 있는가? 있으면 그 계정으로 간다(절대 덮어쓰지 않는다).
+  const body = await r.text().catch(() => "");
+  const existing = await getMapping(projectId, kakaoId, tok);
+  if (existing) {
+    console.error("[kakao] 매핑 선점 경합 — 기존 주인을 따름", r.status);
+    return existing;
+  }
+  console.error("[kakao] 매핑 저장 실패", r.status, body.slice(0, 500));
+  throw new Error(`매핑 저장 실패(${r.status})`);
 }
 
 // ── 커스텀 토큰(클라이언트가 signInWithCustomToken 으로 로그인) ──
@@ -196,15 +223,12 @@ export default async (req) => {
 
     // ④ 매핑: 있으면 그 계정으로 전환, 없으면 지금 익명 계정을 승격(사주·기록 보존)
     const tok = await accessToken();
-    const mapped = await getMapping(projectId, kakaoId, tok);
-    let uid = currentUid;
-    let switched = false;
-    if (mapped) {
-      uid = mapped;
-      switched = mapped !== currentUid;
-    } else {
-      await setMapping(projectId, kakaoId, currentUid, tok);
-    }
+    // 조회·등록 어느 쪽이든 확신이 없으면 여기서 throw 된다(→ 500). 잘못된 uid로
+    // 로그인시키는 것보다 낫다 — 그건 조용히 계정을 갈아엎는 것과 같다.
+    const uid =
+      (await getMapping(projectId, kakaoId, tok)) ??
+      (await claimMapping(projectId, kakaoId, currentUid, tok));
+    const switched = uid !== currentUid;
 
     // ⑤ 커스텀 토큰 발급
     const customToken = createCustomToken(uid, { provider: "kakao", kakaoId });

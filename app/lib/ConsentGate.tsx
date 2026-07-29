@@ -29,6 +29,20 @@ interface ConsentApi {
   promptIfNeeded: () => void;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 🔬 임시 계측 (2026-07-28) — "새 시크릿에서 동의 시트가 또 뜨는" 원인 추적용.
+//    원인 확정 후 **이 블록과 wlog(...) 호출을 전부 지운다.** grep: "🔬 임시 계측"
+//    OAuth 흐름은 자동화가 안 되고, status 가 "no" 로 굳는 순간을 로컬에서 재현하지 못해
+//    라이브 콘솔로만 관측할 수 있다.
+const wlog = (...a: unknown[]) => {
+  try {
+    console.log("[wl]", ...a);
+  } catch {
+    /* 무시 */
+  }
+};
+// ─────────────────────────────────────────────────────────────────────────────
+
 const Ctx = createContext<ConsentApi>({
   requestConsent: async () => true,
   promptIfNeeded: () => {},
@@ -64,16 +78,31 @@ export function ConsentProvider({ children }: { children: React.ReactNode }) {
   // 새로 읽게 한다(낡은 값 사용 방지). 신규·미동의 계정은 여전히 false → 시트 정상 노출(법적 요건).
   useEffect(() => {
     let alive = true;
+    wlog("provider mount, path =", typeof window !== "undefined" ? location.pathname : "?");
     const unsub = onAuthChange((u) => {
       if (!alive) return;
       const uid = u?.uid ?? null;
+      wlog(
+        "auth fire  uid =", uid,
+        " anon =", (u as { isAnonymous?: boolean } | null)?.isAnonymous,
+        " path =", typeof window !== "undefined" ? location.pathname : "?",
+      );
       currentUidRef.current = uid; // ★ 동기적으로 먼저 갱신 — 착지 대조의 기준점
       setStatus("unknown");
       // 로그아웃 상태에선 읽지 않는다. (예전엔 여기서 hasCurrentConsent 가
       //  ensureSignedIn 을 불러 **판정이 익명 계정을 만들어냈다.**)
       if (!uid) return;
+      wlog("read issued  ", uid);
       readConsent(uid).then((v) => {
-        if (!alive) return;
+        if (!alive) {
+          wlog("land(dead)   ", v.uid, "=>", v.status);
+          return;
+        }
+        wlog(
+          "land         ", v.uid, "=>", v.status,
+          " | ref =", currentUidRef.current,
+          v.uid === currentUidRef.current ? " → 반영" : " → 폐기",
+        );
         // ★★ 이 답이 **지금 계정** 것일 때만 반영한다.
         //
         // 로그아웃→재로그인은 uid 가 null → 새 익명 A2 → 카카오 X 로 연달아 바뀌고,
@@ -104,6 +133,7 @@ export function ConsentProvider({ children }: { children: React.ReactNode }) {
   // "unknown"(읽기 실패 등)이면 지금 한 번 더 읽어보고, 그래도 모르면 시트를 띄운다.
   // 동의를 확인하지 못한 채로 개인정보를 저장하지 않는다(법적 요건).
   const requestConsent = useCallback(async (): Promise<boolean> => {
+    wlog("requestConsent  status =", status, " ref =", currentUidRef.current);
     if (status === "yes") return true;
     if (status === "unknown") {
       // 저장하려는 순간이라 계정이 없으면 만든다(쓰기 경로).
@@ -123,7 +153,9 @@ export function ConsentProvider({ children }: { children: React.ReactNode }) {
   // ★ 모를 땐 조르지 않는다. 읽기 실패를 "동의 안 함"으로 오해해 시트를 띄우는 것이
   //   바로 이번 버그의 증상이었다. 확정된 "no" 일 때만 권한다.
   const promptIfNeeded = useCallback(() => {
+    wlog("promptIfNeeded  status =", status, " ref =", currentUidRef.current);
     if (status !== "no") return;
+    wlog("★ 시트 연다 (status=no)");
     void requestConsent();
   }, [status, requestConsent]);
 

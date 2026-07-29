@@ -241,6 +241,12 @@ export async function finishKakaoLogin(code: string): Promise<GoogleLinkResult> 
     if (!res.ok) return "failed";
     const body = (await res.json()) as { customToken?: string; switched?: boolean };
     if (!body.customToken) return "failed";
+    // 🔬 임시 계측 (2026-07-28) — 원인 확정 후 제거. grep: "🔬 임시 계측"
+    console.log(
+      "[wl] kakao-auth  switched =", body.switched,
+      " 로그인전 uid =", auth.currentUser?.uid,
+      " anon =", auth.currentUser?.isAnonymous,
+    );
 
     // ★ 서버가 "옛 계정으로 전환된다"고 알려준다 → 전환 **전에** 익명 데이터를 읽어둔다.
     if (body.switched) stashPending(await captureAnon());
@@ -251,6 +257,8 @@ export async function finishKakaoLogin(code: string): Promise<GoogleLinkResult> 
     refreshSession(); // ★ 카카오 커스텀 토큰으로 uid 가 바뀌었다 — 캐시를 즉시 새 계정으로
     markSignedIn("kakao");
     void saveLinkedProvider("kakao");
+    // 🔬 임시 계측 (2026-07-28) — 원인 확정 후 제거. grep: "🔬 임시 계측"
+    console.log("[wl] 커스텀토큰 로그인 후 uid =", auth.currentUser?.uid);
     if (body.switched) {
       announceSwitched();
     } else {

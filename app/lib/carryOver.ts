@@ -16,20 +16,15 @@
 // ⚠ 익명 문서는 **지우지 못한다.** 보안 규칙이 `request.auth.uid == uid` 라, 전환 후엔
 //   그 문서에 쓸 권한이 없다. 전환 **전에** 지우면 전환이 실패했을 때 진짜로 날아간다.
 //   그래서 남겨둔다(고아 데이터). 정리는 admin 배치의 몫 — 백로그.
-// ★ 읽기는 전부 **FromServer** 다(getDoc/getDocs 아님).
+// ★ 문서 읽기는 전부 **readUserDoc**(재확인 포함) 이다.
 //   이어붙이기의 모든 판단("옛 계정이 비었나?", "이 날짜 무드가 이미 있나?")은 읽기 결과에
-//   달려 있는데, auth 가 막 바뀐 직후엔 캐시가 **빈 문서**로 응답한다(2026-07-29 확인).
+//   달려 있는데, auth 가 막 바뀐 직후의 읽기는 멀쩡한 문서를 **"없음"으로 돌려준다**
+//   (2026-07-29 실측, 경위는 lib/firestoreRead.ts 주석).
 //   "비었다"고 잘못 읽으면 **묻지도 않고 덮어쓴다** — 이 파일이 절대 하지 않기로 한 바로 그 일이다.
-//   서버에서 못 읽으면 throw 되고, 호출부(CarryOverDialog)가 잡아서 **아무것도 안 쓴다.**
+//   읽기가 실패하면 throw 되고, 호출부(CarryOverDialog)가 잡아서 **아무것도 안 쓴다.**
 //   그게 옳다: 모를 땐 건드리지 않는다.
-import {
-  collection,
-  doc,
-  getDocFromServer,
-  getDocsFromServer,
-  setDoc,
-  writeBatch,
-} from "firebase/firestore";
+import { collection, doc, getDocsFromServer, setDoc, writeBatch } from "firebase/firestore";
+import { readUserDoc } from "./firestoreRead";
 import { auth, db } from "./firebase";
 import type { SajuInput } from "./sajuInput";
 import type { MoodEntry } from "./moodJournal";
@@ -58,10 +53,8 @@ export async function captureAnon(): Promise<AnonSnapshot | null> {
   if (!u || !u.isAnonymous) return null; // 익명이 아니면 옮길 게 없다
   try {
     const uid = u.uid;
-    const [userSnap, moodSnap] = await Promise.all([
-      getDocFromServer(doc(db, "users", uid)),
-      getDocsFromServer(collection(db, "users", uid, "moods")),
-    ]);
+    const userSnap = await readUserDoc(uid);
+    const moodSnap = await getDocsFromServer(collection(db, "users", uid, "moods"));
     const data = userSnap.data();
     return {
       uid,
@@ -82,10 +75,13 @@ export async function applyCarryOver(snap: AnonSnapshot): Promise<CarryOutcome> 
   const uid = u.uid;
   // ⚠ 여기서 throw 되면 호출부가 잡아 **아무것도 안 쓴다.** 그게 안전한 실패다 —
   //   옛 계정을 "비었다"고 오해해 덮어쓰느니 이어붙이기를 포기하는 편이 낫다.
-  const [userSnap, moodSnap] = await Promise.all([
-    getDocFromServer(doc(db, "users", uid)),
-    getDocsFromServer(collection(db, "users", uid, "moods")),
-  ]);
+  //
+  // ★ 순서가 중요하다 — 병렬로 읽지 않는다.
+  //   먼저 옛 계정 문서를 **재확인 읽기**로 가져와 토큰 교체 창을 벗어난 것을 확인한다.
+  //   그 뒤에 moods 를 읽어야 믿을 수 있다. 병렬로 읽으면 moods 가 거짓 "비어 있음"으로 와서
+  //   **기존 무드를 덮어쓴다** — 무드는 옛 것이 이겨야 하는데 정반대가 된다.
+  const userSnap = await readUserDoc(uid);
+  const moodSnap = await getDocsFromServer(collection(db, "users", uid, "moods"));
   const old = userSnap.data();
   const oldSaju = (old?.sajuInput as SajuInput | undefined) ?? null;
   const oldConsent = (old?.consent as Consent | undefined) ?? null;
@@ -144,7 +140,7 @@ export async function captureConsent(): Promise<Consent | null> {
   const u = auth.currentUser;
   if (!u) return null;
   try {
-    const snap = await getDocFromServer(doc(db, "users", u.uid));
+    const snap = await readUserDoc(u.uid);
     return (snap.data()?.consent as Consent | undefined) ?? null;
   } catch (e) {
     console.error("[consent] 승격 전 동의 읽기 실패", e);
@@ -160,7 +156,7 @@ export async function carryConsentToCurrent(anon: Consent | null): Promise<void>
   const u = auth.currentUser;
   if (!u || !isConsentValid(anon)) return;
   try {
-    const snap = await getDocFromServer(doc(db, "users", u.uid));
+    const snap = await readUserDoc(u.uid);
     if (isConsentValid(snap.data()?.consent as Consent | undefined)) return; // 이미 유효
     await setDoc(doc(db, "users", u.uid), { consent: anon }, { merge: true });
   } catch (e) {

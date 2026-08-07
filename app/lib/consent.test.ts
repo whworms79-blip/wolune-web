@@ -1,37 +1,27 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
-// 지키려는 것: **동의 판정은 캐시를 믿지 않는다.**
-//
-// 2026-07-29 라이브 로그로 확인된 버그:
-//   카카오 signInWithCustomToken 직후 `getDoc` 이 서버가 아니라 **비어 있는 로컬 캐시**로
-//   응답했다. 새 시크릿은 캐시가 비었으니 "문서 없음"이 오고, 그건 에러가 아니라 정상 응답이라
-//   catch 에도 안 걸린다 → 유효한 동의가 있는 계정인데 "동의 안 함"으로 판정 → 시트가 떴다.
-//   (같은 순간 applyCarryOver 도 같은 문서를 "비었다"고 읽었다.)
-//
-// 그래서 readConsent 는 반드시 getDocFromServer 를 쓴다. getDoc 으로 되돌리면 이 시험이 깨진다.
-
-type Snap = { data: () => unknown };
+// 지키려는 것
+//  · readConsent 는 **readUserDoc**(= "없음"을 재확인하는 읽기)을 쓴다.
+//    평범한 getDoc 으로 되돌리면 2026-07-29 버그가 재발한다 — auth 토큰 교체 직후의 읽기가
+//    멀쩡한 문서를 "없음"으로 돌려줘, 이미 동의한 계정에 동의 시트가 떴다.
+//    (읽기 재확인 자체의 동작은 firestoreRead.test.ts 가 지킨다. 여기선 판정만 본다.)
+//  · 읽지 못한 것("모름")과 동의가 없는 것("없음")을 구분한다.
+//  · saveConsent 는 실패를 성공한 척하지 않는다.
 
 const h = vi.hoisted(() => ({
-  getDocFromServer: vi.fn<(ref: unknown) => Promise<{ data: () => unknown }>>(),
-  getDoc: vi.fn<(ref: unknown) => Promise<{ data: () => unknown }>>(), // 쓰이면 안 된다 — 감시용
+  readUserDoc: vi.fn<(uid: string) => Promise<{ data: () => unknown }>>(),
   setDoc: vi.fn<(ref: unknown, data: unknown, opts?: unknown) => Promise<void>>(),
   doc: vi.fn((_db: unknown, ...path: string[]) => ({ path: path.join("/") })),
   ensureSignedIn: vi.fn<() => Promise<string>>(),
 }));
 
-vi.mock("firebase/firestore", () => ({
-  doc: h.doc,
-  getDoc: h.getDoc,
-  getDocFromServer: h.getDocFromServer,
-  setDoc: h.setDoc,
-}));
+vi.mock("firebase/firestore", () => ({ doc: h.doc, setDoc: h.setDoc }));
 vi.mock("./firebase", () => ({ db: {}, ensureSignedIn: h.ensureSignedIn }));
+vi.mock("./firestoreRead", () => ({ readUserDoc: h.readUserDoc }));
 
 const { readConsent, saveConsent, isConsentValid, CONSENT_VERSION } = await import("./consent");
 
-/** Firestore DocumentSnapshot 흉내 */
-const snapOf = (data: unknown): Snap => ({ data: () => data });
+const snapOf = (data: unknown) => ({ data: () => data });
 
 const validConsent = {
   privacy: true,
@@ -41,8 +31,7 @@ const validConsent = {
 };
 
 beforeEach(() => {
-  h.getDocFromServer.mockReset();
-  h.getDoc.mockReset();
+  h.readUserDoc.mockReset();
   h.setDoc.mockReset();
   h.setDoc.mockResolvedValue(undefined);
   h.ensureSignedIn.mockReset();
@@ -50,36 +39,35 @@ beforeEach(() => {
   vi.spyOn(console, "error").mockImplementation(() => {});
 });
 
-describe("readConsent — 캐시를 믿지 않는다", () => {
-  it("★ getDoc 이 아니라 getDocFromServer 로 읽는다", async () => {
-    h.getDocFromServer.mockResolvedValue(snapOf({ consent: validConsent }));
+describe("readConsent", () => {
+  it("★ 재확인 읽기(readUserDoc)를 쓴다 — 평범한 getDoc 으로 되돌리면 안 된다", async () => {
+    h.readUserDoc.mockResolvedValue(snapOf({ consent: validConsent }));
 
     await readConsent("bx6KyF5");
 
-    expect(h.getDocFromServer).toHaveBeenCalledTimes(1);
-    // 캐시 폴백이 있는 getDoc 은 절대 쓰지 않는다 — 이게 버그의 원인이었다.
-    expect(h.getDoc).not.toHaveBeenCalled();
+    expect(h.readUserDoc).toHaveBeenCalledTimes(1);
+    expect(h.readUserDoc).toHaveBeenCalledWith("bx6KyF5");
   });
 
   it("유효한 동의가 있으면 yes (uid 를 함께 실어 돌려준다)", async () => {
-    h.getDocFromServer.mockResolvedValue(snapOf({ consent: validConsent }));
+    h.readUserDoc.mockResolvedValue(snapOf({ consent: validConsent }));
     await expect(readConsent("bx6KyF5")).resolves.toEqual({ uid: "bx6KyF5", status: "yes" });
   });
 
   it("문서가 정말 없으면 no — 신규는 시트가 떠야 한다(법적 요건)", async () => {
-    h.getDocFromServer.mockResolvedValue(snapOf(undefined));
+    h.readUserDoc.mockResolvedValue(snapOf(undefined));
     await expect(readConsent("new-uid")).resolves.toEqual({ uid: "new-uid", status: "no" });
   });
 
   it("낡은 버전의 동의는 no", async () => {
-    h.getDocFromServer.mockResolvedValue(
+    h.readUserDoc.mockResolvedValue(
       snapOf({ consent: { ...validConsent, version: "2026-07-01" } }),
     );
     await expect(readConsent("old")).resolves.toEqual({ uid: "old", status: "no" });
   });
 
   it("★ 읽기가 실패하면 no 가 아니라 unknown (모름 ≠ 없음)", async () => {
-    h.getDocFromServer.mockRejectedValue(new Error("permission-denied"));
+    h.readUserDoc.mockRejectedValue(new Error("permission-denied"));
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     await expect(readConsent("bx6KyF5")).resolves.toEqual({ uid: "bx6KyF5", status: "unknown" });
@@ -90,8 +78,9 @@ describe("readConsent — 캐시를 믿지 않는다", () => {
 describe("saveConsent — 실패를 성공한 척하지 않는다", () => {
   it("성공하면 true, 현재 버전으로 기록한다", async () => {
     await expect(saveConsent()).resolves.toBe(true);
-    const call = h.setDoc.mock.calls[0];
-    const payload = call[1] as { consent: { version: string; privacy: boolean; age14: boolean } };
+    const payload = h.setDoc.mock.calls[0][1] as {
+      consent: { version: string; privacy: boolean; age14: boolean };
+    };
     expect(payload.consent.version).toBe(CONSENT_VERSION);
     expect(payload.consent.privacy).toBe(true);
     expect(payload.consent.age14).toBe(true);

@@ -1,8 +1,9 @@
 // 개인정보 수집·이용 동의 기록.
 // 첫 사주 제출 시 받은 동의를 users/{uid}.consent 에 남겨 나중에 입증할 수 있게 한다.
 // (동의 화면을 따로 만들지 않고, 실제로 데이터를 저장하는 순간 딱 한 번 받는다.)
-import { doc, getDocFromServer, setDoc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { db, ensureSignedIn } from "./firebase";
+import { readUserDoc } from "./firestoreRead";
 
 // 현재 방침 버전 — 새로 동의를 받을 때 이 값이 기록된다. 방침이 바뀌면 올린다.
 export const CONSENT_VERSION = "2026-07-14";
@@ -85,18 +86,17 @@ export function isConsentValid(c: Consent | null | undefined): boolean {
 //
 // ★ 부수 효과 제거: 예전엔 **동의를 확인하는 코드가 익명 계정을 만들어냈다**(ensureSignedIn).
 //   판정은 읽기다. 계정 생성은 saveConsent 쪽에 둔다.
-// ★★ getDoc 이 아니라 **getDocFromServer** 다. 이게 이 함수의 핵심이다.
+// ★★ 평범한 getDoc 이 아니라 **readUserDoc** 을 쓴다. 이게 이 함수의 핵심이다.
 //
-//   auth 가 막 바뀐 직후(카카오 signInWithCustomToken 직후)엔 getDoc 이 서버가 아니라
-//   **비어 있는 로컬 캐시로 응답해 버린다.** 새 시크릿은 캐시가 비었으니 "문서 없음"이 오고,
-//   그건 에러가 아니라 정상 응답이라 catch 에도 안 걸린다 → 그대로 "동의 안 함"이 된다.
+//   auth 가 막 바뀐 직후(카카오 signInWithCustomToken 직후)의 읽기는 멀쩡히 있는 문서를
+//   **"없음"으로 돌려준다** — 에러도 아니라서 catch 에도 안 걸리고, 그대로 "동의 안 함"이 된다.
 //   → 이미 동의한 계정으로 로그인했는데 동의 시트가 떴다(2026-07-29 라이브 로그로 확인).
-//   같은 순간 applyCarryOver 도 같은 문서를 "비었다"고 읽었다 — 우연이 아니라 구조다.
+//   자세한 경위와 왜 getDocFromServer 로도 안 막히는지는 lib/firestoreRead.ts 주석 참고.
 //
-//   판정은 **권위 있는 답만 믿는다.** 서버에서 못 받으면 "모름"이지 "없음"이 아니다.
+//   판정은 **확인된 답만 믿는다.** 못 읽으면 "모름"이지 "없음"이 아니다.
 export async function readConsent(uid: string): Promise<ConsentVerdict> {
   try {
-    const snap = await getDocFromServer(doc(db, "users", uid));
+    const snap = await readUserDoc(uid);
     return {
       uid,
       status: isConsentValid(snap.data()?.consent as Consent | undefined) ? "yes" : "no",

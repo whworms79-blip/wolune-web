@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { loadSajuInput, chartUrl, type SajuInput } from "../lib/sajuInput";
+import { loadSajuInput, fetchChart, type SajuInput } from "../lib/sajuInput";
 import { pad } from "../lib/time";
 import { useConsent } from "../lib/ConsentGate";
 import { GlossaryText } from "../saju/result/Glossary";
@@ -117,7 +117,7 @@ export default function HomePage() {
       }
       const now = new Date();
       const target = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-      fetch(chartUrl(input, { target_date: target }), { cache: "no-store", signal: controller.signal })
+      fetchChart(input, { target_date: target }, { signal: controller.signal })
         .then((r) => {
           if (!r.ok) throw new Error("bad");
           return r.json();

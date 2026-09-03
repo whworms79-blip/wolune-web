@@ -7,13 +7,12 @@
 //   · 저장된 사주 있음 → 엔진 계산 후 ResultView 로 렌더(파라미터 경로와 같은 화면).
 //   · 저장된 사주 없음(익명·미저장) → 입력 화면(/saju)으로.
 //
-// ⚠ 엔진 호출은 같은 오리진 프록시(/api/engine/chart)를 거친다 — 이 요청 쿼리엔 여전히
-//   출생정보가 담기지만, 그건 fetch(XHR)라 **주소창·브라우저 기록엔 남지 않는다**(홈·저널·마이와
-//   동일). 이번 변경의 목표는 "화면 이동 URL"에서 개인정보를 빼는 것이다.
+// 엔진 호출은 같은 오리진 프록시(/api/engine/chart)에 POST 한다(홈·저널·마이와 동일) —
+// 출생정보는 본문에 담겨 주소창·브라우저 기록·서버 액세스 로그 어디에도 남지 않는다.
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { confirmUid } from "../../lib/firebase";
-import { loadSajuInput, chartUrl } from "../../lib/sajuInput";
+import { loadSajuInput, fetchChart } from "../../lib/sajuInput";
 import { isCompleteChart, type EngineChart } from "./chart";
 import type { GlossaryData } from "../../lib/glossary";
 import ResultView from "./ResultView";
@@ -41,7 +40,7 @@ export default function ResultFromStore({ glossary }: { glossary: GlossaryData }
         return;
       }
       try {
-        const res = await fetch(chartUrl(saved), { cache: "no-store" });
+        const res = await fetchChart(saved);
         if (cancelled) return;
         if (!res.ok) {
           setPhase({ kind: "error" });

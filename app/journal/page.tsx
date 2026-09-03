@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { loadSajuInput, chartUrl, type SajuInput } from "../lib/sajuInput";
+import { loadSajuInput, fetchChart, type SajuInput } from "../lib/sajuInput";
 import {
   getMoodEntry,
   saveMoodEntry,
@@ -153,7 +153,7 @@ export default function JournalPage() {
       setEntries(list);
       // 기록이 쌓였는데 아직 익명 → 계정 연결 유도 카드
 
-      fetch(chartUrl(inp, { target_date: t }), { cache: "no-store", signal: controller.signal })
+      fetchChart(inp, { target_date: t }, { signal: controller.signal })
         .then((r) => (r.ok ? r.json() : null))
         .then((c: Chart | null) => { if (!cancelled) setChart(c); })
         .catch(() => { if (!cancelled) setChart(null); })

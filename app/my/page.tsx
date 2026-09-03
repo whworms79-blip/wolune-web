@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   loadSajuInput,
   clearSajuInput,
-  chartUrl,
+  fetchChart,
   type SajuInput,
 } from "../lib/sajuInput";
 import { clearMoodJournal } from "../lib/moodJournal";
@@ -155,7 +155,7 @@ export default function MyPage() {
         clearTimeout(timer);
         return;
       }
-      fetch(chartUrl(saved), { cache: "no-store", signal: controller.signal })
+      fetchChart(saved, undefined, { signal: controller.signal })
         .then((r) => (r.ok ? r.json() : null))
         .then((c: Chart | null) => { if (!cancelled) setChart(c); })
         .catch(() => { if (!cancelled) setChart(null); })

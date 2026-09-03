@@ -79,8 +79,20 @@ export function chartQuery(
   return p;
 }
 
-// 엔진 API URL — 같은 오리진 서버 프록시(/api/engine/chart)를 거친다.
+// 엔진 호출 — 같은 오리진 서버 프록시(/api/engine/chart)에 **POST** 한다.
 // 엔진 실주소는 서버(route.ts)의 WOLUNE_ENGINE_URL 에만 있고 브라우저 번들엔 노출되지 않는다.
-export function chartUrl(input: SajuInput, extra?: Record<string, string>): string {
-  return `/api/engine/chart?${chartQuery(input, extra).toString()}`;
+// ⚠ 예전엔 GET 쿼리스트링이라 Netlify 함수 로그에 출생정보가 남았다(개인정보 백로그).
+//   POST 본문은 액세스 로그에 남지 않는다.
+export function fetchChart(
+  input: SajuInput,
+  extra?: Record<string, string>,
+  init?: Pick<RequestInit, "signal">,
+): Promise<Response> {
+  return fetch("/api/engine/chart", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ ...input, ...extra }),
+    cache: "no-store",
+    signal: init?.signal,
+  });
 }

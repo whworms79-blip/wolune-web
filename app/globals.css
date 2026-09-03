@@ -605,3 +605,20 @@ a {
 @media (prefers-reduced-motion: reduce) {
   .why-score__mark { transition: none; }
 }
+
+/* ── 지지가 만나는 자리 (궁합 CompatResult — 공용: 입력 결과·공유 SSR, basis 와 같은 이유로 여기) ── */
+.branchrel__sub { margin: 6px 0 10px; font-size: var(--fs-caption); color: var(--text-tertiary); line-height: 1.5; }
+.branchrel__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+.branchrel__row { display: flex; align-items: baseline; gap: 8px; }
+.branchrel__badge { flex: none; font-weight: 600; font-size: var(--fs-body-s); }
+/* 색 규칙은 명식 형충회합(result.css .relation--*)과 동일 — 합=라벤더 / 충=화 / 잔긴장=로즈 */
+.branchrel__row--he      .branchrel__badge { color: var(--lavender); }
+.branchrel__row--chong   .branchrel__badge { color: var(--element-fire); }
+.branchrel__row--minor   .branchrel__badge { color: var(--rose); }
+.branchrel__row--neutral .branchrel__badge { color: var(--text-tertiary); }
+/* 배지 안 툴팁 밑줄·ⓘ도 배지 색을 따라가게(따로 튀지 않도록 — result.css 와 동일 처리) */
+.branchrel__badge .gloss__term { color: inherit; border-bottom-color: currentColor; opacity: 0.95; }
+.branchrel__badge .gloss__mark { color: inherit; font-size: 0.66em; opacity: 0.7; }
+.branchrel__body { font-size: var(--fs-body-s); color: var(--text-secondary); line-height: 1.55; }
+.branchrel__spouse { margin-left: 6px; font-size: var(--fs-caption); color: var(--gold); border: 1px solid currentColor; border-radius: 999px; padding: 0 6px; white-space: nowrap; }
+.branchrel__feel { color: var(--text-tertiary); }

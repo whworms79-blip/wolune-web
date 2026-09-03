@@ -8,7 +8,7 @@
 // 화면의 3단 구조: 감정(점수·요약) → 재료(점수 근거·두 분의 결) → 성찰.
 // ★ 점수 근거 카드의 마지막 문단(disclosure)은 절대 빼지 말 것. 궁합 점수는 사주에 원래
 //   없는, 우리가 만든 숫자다 — 그걸 정직하게 밝히는 게 이 제품의 핵심이다.
-import { initialOf, type CompatView, type BasisKind } from "../lib/compatibility";
+import { initialOf, type CompatView, type BasisKind, type BranchRelation } from "../lib/compatibility";
 import { GlossaryText, GlossaryTerm } from "../saju/result/Glossary";
 
 const ico = {
@@ -25,6 +25,22 @@ const CircleCheck = () => (<svg viewBox="0 0 24 24" {...ico}><circle cx="12" cy=
 const Sparkle = () => (<svg viewBox="0 0 24 24" {...ico}><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3Z" /></svg>);
 
 const sign = (n: number) => (n > 0 ? `+${n}` : `${n}`);
+
+// ── 지지 관계 표(2순위 백로그) — 엔진이 이미 계산해 실어주던 branch_relations 를 화면에 ──
+// 색·문구는 명식의 형충회합과 같은 규칙(합=어울림 / 충=부딪힘 / 그 외=잔잔한 긴장).
+// "좋다/나쁘다" 단정 없이 관계의 성질만 말한다.
+const BRANCH_LABEL: Record<string, string> = {
+  year: "연지", month: "월지", day: "일지", hour: "시지",
+};
+const KIND_FEEL: Record<BasisKind, string> = {
+  he: "서로 끌어당기는 자리",
+  chong: "부딪히며 자극을 주는 자리",
+  minor: "가끔 신경 쓰이는 잔잔한 긴장",
+  neutral: "무난한 자리",
+};
+// 일지-일지(배우자궁)가 점수에서 9배 무게를 갖는 것처럼, 표에서도 맨 위로 올린다.
+const isSpouse = (r: BranchRelation) => r.a_pillar === "day" && r.b_pillar === "day";
+
 
 // 색 규칙은 명식의 형충회합과 동일하다 — 합=라벤더 / 충=화 / 잔긴장=로즈 / 중립=회색.
 const KIND_CLASS: Record<BasisKind, string> = {
@@ -131,6 +147,38 @@ export default function CompatResult({
         </section>
 
         {/* 두 분의 결 — 신살 접점. 흉살도 겁주지 않고 강점의 언어로. */}
+        {/* 지지가 만나는 자리 — 두 사람의 네 지지 사이 관계(점수 재료의 원본).
+            관계가 하나도 없으면 섹션 자체를 숨긴다 — "아무것도 없음"은 빈 표의 벽이 될 뿐이다. */}
+        {view.branch_relations?.length ? (
+          <section className="wl-card branchrel" aria-labelledby="branchrel-title">
+            <span className="wl-section-label branchrel__title" id="branchrel-title">
+              지지가 만나는 자리
+            </span>
+            <p className="branchrel__sub">
+              두 분의 네 기둥 지지 사이에 흐르는 관계예요. 위 점수의 재료가 된 자리들이에요.
+            </p>
+            <ul className="branchrel__list">
+              {[...view.branch_relations]
+                .sort((a, b) => Number(isSpouse(b)) - Number(isSpouse(a)))
+                .map((r, i) => (
+                  <li key={i} className={`branchrel__row branchrel__row--${r.kind}`}>
+                    <span className="branchrel__badge">
+                      <GlossaryTerm term={r.type} />
+                    </span>
+                    <span className="branchrel__body">
+                      {pa.name}의 {BRANCH_LABEL[r.a_pillar] ?? r.a_pillar} {r.branches[0]} ·{" "}
+                      {pb.name}의 {BRANCH_LABEL[r.b_pillar] ?? r.b_pillar} {r.branches[1]}
+                      {isSpouse(r) ? (
+                        <span className="branchrel__spouse"><GlossaryTerm term="배우자궁" /></span>
+                      ) : null}
+                      <span className="branchrel__feel"> — {KIND_FEEL[r.kind]}</span>
+                    </span>
+                  </li>
+                ))}
+            </ul>
+          </section>
+        ) : null}
+
         {meet ? (
           <section className="wl-card insight insight--meet">
             <div className="insight__head">

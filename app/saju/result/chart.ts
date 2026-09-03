@@ -73,9 +73,11 @@ interface EngineRelation {
 }
 export interface EngineChart {
   input?: { birth_datetime_local?: string; hour_known?: boolean };
-  character?: { name_ko: string; name_en: string; tagline: string };
+  character?: { name_ko: string; name_en: string; tagline: string; selection_basis?: string };
   five_elements?: Record<ElKey, { pct: number }>;
-  shensha?: { name: string }[];
+  shensha?: { name: string; hanja?: string; pillars?: string[]; rule?: string }[];
+  // 진태양시 보정 내역 — 화면은 총 보정 분(total_correction_min)만 쓴다(예: -41.2).
+  true_solar_time?: { total_correction_min?: number };
   // 시간 미상이면 hour 가 없다(시주 제외).
   pillars?: { year: Pillar; month: Pillar; day: Pillar; hour?: Pillar };
   calc_meta?: { true_solar_time_applied?: boolean };
@@ -132,6 +134,12 @@ export interface PillarCol {
 export interface ResultView {
   character: { name_ko: string; name_en: string; desc: string; shensha: string[] };
   trueSolar: boolean;
+  // 진태양시 총 보정, 사람 말("41분 이른" / "3분 늦은"). 미적용·0분·데이터 없음이면 "".
+  trueSolarCorr: string;
+  // 명식 상세 — 캐릭터가 왜 이 캐릭터인지(엔진 selection_basis 를 사람 말로). 없으면 "".
+  characterBasis: string;
+  // 명식 상세 — 신살 각각의 성립 근거(엔진이 이미 계산해 실어주던 hanja·pillars·rule).
+  shenshaRows: { name: string; hanja: string; where: string; rule: string }[];
   reflectChar: string;
   reflectElement: string;
   reflectLuck: string;
@@ -230,6 +238,21 @@ const REL_FEEL: Record<RelKind, string> = {
   clash: "부딪히는 기운",
   tension: "잔잔한 긴장",
 };
+// 캐릭터 selection_basis(엔진 원문) → 사람 말.
+//   "표상 신살 '역마' (연지)"            → "연지에 깃든 역마가 대표 결이 되었어요"
+//   "콤보(역마+백호)"                    → "역마와 백호, 두 신살이 함께 만든 조합이에요"
+//   "신살 없음 → 일간 오행(수) fallback" → "두드러진 신살이 없어 …"
+function charBasisText(basis?: string): string {
+  if (!basis) return "";
+  let m = basis.match(/^표상 신살 '(.+)' \((.+)\)$/);
+  if (m) return `${m[2]}에 깃든 ${m[1]}이 대표 결이 되었어요`;
+  m = basis.match(/^콤보\((.+)\+(.+)\)$/);
+  if (m) return `${m[1]}와 ${m[2]}, 두 신살이 함께 만든 조합이에요`;
+  m = basis.match(/^신살 없음 → 일간 오행\((.+)\) fallback$/);
+  if (m) return `두드러진 신살이 없어, 일간의 오행(${m[1]})이 지닌 기본 결로 정했어요`;
+  return basis;
+}
+
 function relKind(type: string): RelKind {
   if (type.includes("합")) return "harmony";
   if (type.includes("충")) return "clash";
@@ -344,6 +367,25 @@ export function buildView(
 
   // 캐릭터 + 신살
   const shensha = (chart.shensha || []).map((s) => s.name);
+
+  // ── 버려지던 엔진 데이터 회수(인계서 2단계 백로그) ──
+  // 신살 성립 근거 — 어느 기둥에서, 어떤 규칙으로. "근거를 보여주는 정직함"의 재료.
+  const shenshaRows = (chart.shensha || []).map((s) => ({
+    name: s.name,
+    hanja: s.hanja || "",
+    where: (s.pillars || []).join("·"),
+    rule: s.rule || "",
+  }));
+  // 캐릭터 선택 근거 — 엔진 selection_basis 세 형태를 사람 말로 푼다. 모르는 형태면 원문 그대로
+  // (없는 것보단 낫다 — 다만 엔진이 형태를 바꾸면 여기도 따라와야 한다).
+  const characterBasis = charBasisText(chart.character?.selection_basis);
+  // 진태양시 총 보정 — 음수면 시계보다 이른 시각 기준. |1분| 미만이면 굳이 말하지 않는다.
+  const corrMin = chart.true_solar_time?.total_correction_min;
+  const corrAbs = typeof corrMin === "number" ? Math.round(Math.abs(corrMin)) : 0;
+  const trueSolarCorr =
+    chart.calc_meta?.true_solar_time_applied && typeof corrMin === "number" && corrAbs >= 1
+      ? `${corrAbs}분 ${corrMin < 0 ? "이른" : "늦은"}`
+      : "";
 
   // 오행 막대 — 강한 순 정렬, 최댓값 96px 기준
   const rows = (Object.keys(fe) as ElKey[])
@@ -548,6 +590,9 @@ export function buildView(
       shensha,
     },
     trueSolar: !!chart.calc_meta?.true_solar_time_applied,
+    trueSolarCorr,
+    characterBasis,
+    shenshaRows,
     reflectChar,
     reflectElement,
     reflectLuck,

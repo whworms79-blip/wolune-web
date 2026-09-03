@@ -413,3 +413,20 @@
   letter-spacing: 0.5px;
 }
 .months__tone { margin-top: 14px; line-height: 1.6; }
+
+/* ── 캐릭터·신살의 근거 (명식 상세) — 엔진 selection_basis·shensha.rule 회수 ── */
+.shenshabasis__list {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+}
+.shenshabasis__row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.shenshabasis__name { font-size: var(--fs-body-s); font-weight: var(--fw-medium); color: var(--gold); }
+.shenshabasis__name .gloss__term { color: inherit; border-bottom-color: currentColor; opacity: 0.95; }
+.shenshabasis__name .gloss__mark { color: inherit; font-size: 0.66em; opacity: 0.7; }
+.shenshabasis__hanja { margin-left: 4px; color: var(--text-tertiary); font-weight: var(--fw-regular); letter-spacing: 0.04em; }
+.shenshabasis__where { font-size: var(--fs-body-s); color: var(--text-secondary); }
+.shenshabasis__rule { font-size: var(--fs-caption); color: var(--text-tertiary); }

@@ -53,7 +53,11 @@ export default function ResultView({
             <span className="wl-trust-badge">
               <CircleCheck />{" "}
               {v.trueSolar ? (
-                <><GlossaryTerm term="진태양시" />로 정밀 계산됨</>
+                <>
+                  <GlossaryTerm term="진태양시" />로 정밀 계산됨
+                  {/* 보정 수치 — 엔진이 계산해두고 화면이 버리던 값. "얼마나" 정밀한지 밝힌다. */}
+                  {v.trueSolarCorr && <> · 시계보다 {v.trueSolarCorr} 시각 기준</>}
+                </>
               ) : (
                 "표준시 기준 계산됨"
               )}
@@ -262,6 +266,33 @@ export default function ResultView({
                 <p className="relations__empty">두드러진 관계가 보이지 않아요.</p>
               )}
             </section>
+
+            {/* 캐릭터·신살의 근거 — 엔진이 실어주던 selection_basis·hanja·rule 회수.
+                "이 점수는 이렇게 나왔어요"(궁합)와 같은 원칙: 만든 결과일수록 근거를 보여준다. */}
+            {(v.characterBasis || v.shenshaRows.length > 0) && (
+              <section className="relations charbasis">
+                <h3 className="relations__title">캐릭터와 신살의 근거</h3>
+                {v.characterBasis && (
+                  <p className="relations__sub">
+                    &lsquo;{v.character.name_ko}&rsquo;는 이렇게 정해졌어요 — {v.characterBasis}.
+                  </p>
+                )}
+                {v.shenshaRows.length > 0 && (
+                  <ul className="shenshabasis__list">
+                    {v.shenshaRows.map((sr) => (
+                      <li className="shenshabasis__row" key={sr.name}>
+                        <span className="shenshabasis__name">
+                          <GlossaryTerm term={sr.name} />
+                          {sr.hanja && <span className="shenshabasis__hanja">{sr.hanja}</span>}
+                        </span>
+                        {sr.where && <span className="shenshabasis__where">{sr.where}</span>}
+                        {sr.rule && <span className="shenshabasis__rule">성립: {sr.rule}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            )}
 
             <p className="meongsik__note"><GlossaryText text={v.meongsikNote} /></p>
           </div>

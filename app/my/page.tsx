@@ -9,6 +9,7 @@ import {
   type SajuInput,
 } from "../lib/sajuInput";
 import { clearMoodJournal } from "../lib/moodJournal";
+import { sijinOfTime } from "../lib/sijin";
 import {
   currentEmail,
   currentName,
@@ -65,9 +66,12 @@ function fmtBirth(date: string): string {
   const m = date.match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
   return m ? `${m[1]}년 ${parseInt(m[2], 10)}월 ${parseInt(m[3], 10)}일` : date;
 }
-// "23:05" → "오후 11:05"
+// "23:05" → "오후 11:05". 단, 시진 중간값(예: 축시의 02:30)으로 저장된 값은 시진으로
+// 되돌려 보여준다 — "오전 2:30"으로 보여주면 축시를 고른 사람이 혼란스럽다(온보딩 역매핑과 동일 규칙).
 function fmtTime(hhmm?: string): string {
   if (!hhmm) return "모름";
+  const sj = sijinOfTime(hhmm);
+  if (sj) return `${sj.name} (${sj.daily})`;
   const m = hhmm.match(/^(\d{1,2}):(\d{2})/);
   if (!m) return hhmm;
   const h = parseInt(m[1], 10);

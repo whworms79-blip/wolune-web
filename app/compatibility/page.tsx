@@ -15,6 +15,7 @@ import {
 } from "../lib/compatibility";
 import CompatResult from "./CompatResult";
 import { pad, parseTime, to12h } from "../lib/time";
+import { sijinOfTime } from "../lib/sijin";
 import { CITIES } from "../lib/cities";
 import "./compatibility.css";
 
@@ -209,6 +210,14 @@ function PersonFields({
               모름
             </button>
           </div>
+          {/* 시진 역매핑 힌트 — 값이 시진 중간값(예: 02:30=축시)이면 그 사실을 밝힌다.
+              "오전 2:30"만 보여주면 온보딩에서 축시를 고른 사람이 혼란스럽다(마이와 동일 규칙).
+              입력값 자체는 시각 텍스트를 유지한다 — parseTime 이 읽을 수 있어야 하므로. */}
+          {!value.unknownTime && sijinOfTime(parseTime(value.time)) ? (
+            <p className="wl-caption cal-hint">
+              {sijinOfTime(parseTime(value.time))!.name}({sijinOfTime(parseTime(value.time))!.daily})의 가운데 시각이에요
+            </p>
+          ) : null}
         </div>
 
         {/* 태어난 곳 + 성별 */}

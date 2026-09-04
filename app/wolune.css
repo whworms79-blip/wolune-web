@@ -48,6 +48,15 @@
   --element-metal: #bfc3d4;
   --element-water: #6e9bc9;
 
+  /* 지지 관계(형충회합·궁합)의 성질 — 세 화면이 같은 색 규칙을 쓴다.
+     명식의 형충회합, 궁합의 점수 근거, 궁합의 '지지가 만나는 자리'.
+     ★ 팔레트는 여기 한 곳에서만 정한다 — 예전엔 세 CSS 블록에 색이 각각 적혀 있어
+       "세 곳을 같이 고쳐야 한다"고 주석으로만 묶여 있었다(고치다 하나 빠지면 화면끼리 어긋난다). */
+  --rel-harmony: var(--lavender);   /* 합 — 육합·삼합·방합 */
+  --rel-clash: var(--element-fire); /* 충 — 육충 */
+  --rel-tension: var(--rose);       /* 잔긴장 — 형·해·파 */
+  --rel-neutral: var(--text-secondary);
+
   /* 무드 / 배지 */
   --mood-inactive: #837fa8;   /* 비활성 무드 아이콘 — 다크 대비 상향(앱과 동일) */
   --trust-text: var(--gold);

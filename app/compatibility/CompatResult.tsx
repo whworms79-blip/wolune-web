@@ -162,7 +162,7 @@ export default function CompatResult({
                 .sort((a, b) => Number(isSpouse(b)) - Number(isSpouse(a)))
                 .map((r, i) => (
                   <li key={i} className={`branchrel__row branchrel__row--${r.kind}`}>
-                    <span className="branchrel__badge">
+                    <span className="branchrel__badge gloss-inherit">
                       <GlossaryTerm term={r.type} />
                     </span>
                     <span className="branchrel__body">
@@ -192,7 +192,7 @@ export default function CompatResult({
                     <span className="meet__who">{p.name}</span>
                     <span className="meet__chips">
                       {list.map((n) => (
-                        <span className="meet__chip" key={n}>
+                        <span className="meet__chip gloss-inherit" key={n}>
                           <GlossaryTerm term={n} />
                         </span>
                       ))}

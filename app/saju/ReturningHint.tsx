@@ -29,7 +29,10 @@ export default function ReturningHint() {
   const [newUser, setNewUser] = useState(false);
 
   useEffect(() => onAuthChange(() => setAnon(isAnonymous())), []);
+  // localStorage 는 서버에 없다 — 렌더 중에 읽으면 SSR 결과와 어긋나 하이드레이션이 깨진다.
+  // 마운트 뒤에 읽어 반영하는 게 이 값들의 정해진 자리다.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 클라이언트 전용 값(SSR 불일치 방지)
     setKnown(hasSignedInBefore());
     setProv(lastProvider());
   }, []);

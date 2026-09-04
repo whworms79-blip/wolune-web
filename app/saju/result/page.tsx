@@ -11,7 +11,7 @@
 // ⚠ 공유 링크(/compatibility/share)와 OG 라우트는 이 파일과 무관 — 그대로 둔다.
 import { isCompleteChart, type EngineChart } from "./chart";
 import { getGlossary } from "../../lib/glossary";
-import { chartQuery, type SajuInput } from "../../lib/sajuInput";
+import { chartQuery, toSajuInput, type SajuInput } from "../../lib/sajuInput";
 import { FallbackState } from "./ui";
 import ResultView from "./ResultView";
 import ResultFromStore from "./ResultFromStore";
@@ -30,15 +30,9 @@ type FetchResult =
 
 // 서버에서 엔진 호출 (타임아웃 6초, 실패해도 throw 대신 결과 객체 반환)
 async function fetchChart(sp: Record<string, string | string[] | undefined>): Promise<FetchResult> {
-  // 들어온 쿼리를 chartQuery 규칙으로 정규화(엔진이 기대하는 파라미터만 통과).
-  const input: SajuInput = {
-    date: one(sp.date),
-    time: one(sp.time) || undefined,
-    city: one(sp.city) || undefined,
-    gender: one(sp.gender) === "male" ? "male" : "female",
-    calendar: one(sp.calendar) === "lunar" ? "lunar" : "solar",
-    is_leap_month: one(sp.is_leap_month) === "1" || undefined,
-  };
+  // 들어온 쿼리를 정규화(엔진이 기대하는 파라미터만 통과).
+  // 규칙은 lib/sajuInput.ts 한 곳 — 프록시(/api/engine/chart)와 같은 계약을 쓴다.
+  const input: SajuInput = toSajuInput((k) => one(sp[k]));
   const params = chartQuery(input);
 
   const controller = new AbortController();

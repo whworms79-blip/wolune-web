@@ -121,9 +121,12 @@ export default function JournalPage() {
   const [showLinkCard, setShowLinkCard] = useState(false);
   const [showInsightLink, setShowInsightLink] = useState(false);
 
+  // '오늘'은 **보는 사람의 시계**로 정해진다 — 서버 시간으로 렌더하면 시간대가 다른 사용자에게
+  // 날짜가 하루 어긋난 채 하이드레이션된다. 그래서 마운트 뒤에 정한다.
   useEffect(() => {
     const now = new Date();
     const t = dateKey(now);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 클라이언트 시계 기준(SSR 불일치 방지)
     setToday(t);
 
     const controller = new AbortController();
@@ -220,8 +223,11 @@ export default function JournalPage() {
   // 계정 연결 유도 — 기록 수와 통찰 상태에 따라 어느 카드를 보일지 정한다.
   //   · 통찰이 열렸으면(③) 그쪽이 진짜 유도 → ②는 뜨지 않는다(중복 방지).
   //   · 익명이 아니거나 이미 "나중에"로 닫았으면 둘 다 뜨지 않는다.
+  // ⚠ 렌더 중에 계산하면 안 된다 — 두 판정 함수가 isAnonymous()(Firebase Auth)와
+  //   localStorage 플래그를 읽는다. 서버엔 둘 다 없어 하이드레이션이 어긋난다.
   useEffect(() => {
     const unlockedNow = insight?.unlocked ?? false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 로그인 상태·로컬 플래그(SSR 불일치 방지)
     setShowLinkCard(shouldShowJournalCard(entries.length, unlockedNow));
     setShowInsightLink(shouldShowInsightCard(unlockedNow));
   }, [entries, insight]);

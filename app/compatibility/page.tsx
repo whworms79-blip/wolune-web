@@ -114,6 +114,9 @@ function PersonFields({
   const isLunar = value.calendar === "lunar";
   const isMe = role === "me";
   const listId = `city-${role}`;
+  // 시진 역매핑은 한 번만 계산한다 — 아래 힌트에서 세 번 부르면 키 입력마다 같은 파싱이 반복되고,
+  // 널 단언(!)도 따라붙는다. (판정 규칙 자체는 lib/sijin.ts 한 곳에 있다)
+  const sijin = value.unknownTime ? null : sijinOfTime(parseTime(value.time));
 
   return (
     <section className={`wl-card person-card ${isMe ? "person-card--me" : "person-card--you"}`}>
@@ -211,11 +214,11 @@ function PersonFields({
             </button>
           </div>
           {/* 시진 역매핑 힌트 — 값이 시진 중간값(예: 02:30=축시)이면 그 사실을 밝힌다.
-              "오전 2:30"만 보여주면 온보딩에서 축시를 고른 사람이 혼란스럽다(마이와 동일 규칙).
-              입력값 자체는 시각 텍스트를 유지한다 — parseTime 이 읽을 수 있어야 하므로. */}
-          {!value.unknownTime && sijinOfTime(parseTime(value.time)) ? (
+              입력값 자체는 시각 텍스트를 유지한다 — parseTime 이 읽을 수 있어야 하므로.
+              (마이는 같은 사실을 "오전 2:30 (축시)" 병기로 알린다 — 화면 성격이 달라 문장만 다르다) */}
+          {sijin ? (
             <p className="wl-caption cal-hint">
-              {sijinOfTime(parseTime(value.time))!.name}({sijinOfTime(parseTime(value.time))!.daily})의 가운데 시각이에요
+              {sijin.name}({sijin.daily})의 가운데 시각이에요
             </p>
           ) : null}
         </div>

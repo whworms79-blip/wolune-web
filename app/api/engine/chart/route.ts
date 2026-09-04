@@ -7,29 +7,15 @@
 //   출생지)를 남겼다(인계서 개인정보 백로그). POST 본문은 액세스 로그에 남지 않는다.
 //   프록시→엔진 구간은 GET 을 유지한다: 엔진이 이미 로그에서 쿼리스트링을 지우고,
 //   엔진 API 를 바꾸면 앱(Flutter)과의 계약도 함께 움직여야 하기 때문이다.
-import { chartQuery, type SajuInput } from "../../../lib/sajuInput";
+import { chartQuery, toSajuInput, type SajuInput } from "../../../lib/sajuInput";
 
 export const dynamic = "force-dynamic"; // 매 요청 계산(캐시 금지)
 
 const ENGINE = process.env.WOLUNE_ENGINE_URL || "http://127.0.0.1:8000";
 
-// GET 쿼리든 POST 본문이든 같은 규칙으로 정규화해 엔진에 넘긴다(엔진이 기대하는 파라미터만 통과).
-async function proxy(raw: Record<string, unknown>): Promise<Response> {
-  const str = (k: string) => (typeof raw[k] === "string" ? (raw[k] as string) : "");
-  const input: SajuInput = {
-    date: str("date"),
-    time: str("time") || undefined,
-    city: str("city") || undefined,
-    gender: str("gender") === "male" ? "male" : "female",
-    calendar: str("calendar") === "lunar" ? "lunar" : "solar",
-    // GET 폴백은 "1", POST 본문은 boolean — 둘 다 받는다.
-    is_leap_month: raw["is_leap_month"] === "1" || raw["is_leap_month"] === true || undefined,
-  };
-  const extra: Record<string, string> = {};
-  for (const k of ["target_date", "target_year", "target_month"]) {
-    const v = str(k);
-    if (v) extra[k] = v;
-  }
+// 정규화된 입력을 엔진에 넘긴다. 전송 형식(쿼리스트링/JSON) 사정은 각 핸들러가 흡수하고,
+// 여기까지는 SajuInput 하나로만 들어온다 — 그래야 새 필드가 한 곳에서 끝난다.
+async function proxy(input: SajuInput, extra: Record<string, string>): Promise<Response> {
   const qs = chartQuery(input, extra).toString();
 
   // 타임아웃 6초 — 엔진이 꺼져 있거나 느리면 502로 폴백(클라이언트가 안내 화면 처리).
@@ -59,6 +45,25 @@ async function proxy(raw: Record<string, unknown>): Promise<Response> {
   }
 }
 
+// 본문에서 값 하나를 문자열로 꺼낸다. boolean true 는 "1" 로 맞춰 준다 —
+// 웹 클라이언트는 is_leap_month 를 boolean 으로 보내고, 쿼리스트링은 "1" 로 보낸다.
+const fromBody = (body: Record<string, unknown>) => (k: string): string | undefined => {
+  const v = body[k];
+  if (typeof v === "string") return v;
+  if (v === true) return "1";
+  return undefined;
+};
+
+const EXTRA_KEYS = ["target_date", "target_year", "target_month"] as const;
+function pickExtra(get: (k: string) => string | undefined): Record<string, string> {
+  const extra: Record<string, string> = {};
+  for (const k of EXTRA_KEYS) {
+    const v = (get(k) || "").trim();
+    if (v) extra[k] = v;
+  }
+  return extra;
+}
+
 export async function POST(request: Request) {
   let parsed: unknown;
   try {
@@ -67,17 +72,23 @@ export async function POST(request: Request) {
     return Response.json({ error: "bad_request" }, { status: 400 });
   }
   // ⚠ 파싱 성공 ≠ 객체. 본문 "null"·"[]"·"3" 은 전부 유효한 JSON 이라 위 catch 를 지나치고,
-  //   proxy 안에서 raw[k] 접근이 TypeError 로 터져 400 대신 500 이 나간다(로그도 더럽힌다).
+  //   그대로 두면 필드 접근이 TypeError 로 터져 400 대신 500 이 나간다(로그도 더럽힌다).
   //   봇·헬스체커·잘못된 재시도가 실제로 이런 본문을 보낸다.
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
     return Response.json({ error: "bad_request" }, { status: 400 });
   }
-  return proxy(parsed as Record<string, unknown>);
+  const get = fromBody(parsed as Record<string, unknown>);
+  return proxy(toSajuInput(get), pickExtra(get));
 }
 
-// 옛 번들 폴백 — 배포 직후 아직 열려 있던 탭은 예전 번들로 GET 을 쏜다. 그들을 깨뜨리지
-// 않기 위해서만 남겨둔다. 새 코드는 전부 POST(fetchChart)를 쓴다.
+// ⏳ 옛 번들 폴백 — **2026-10-31 이후 삭제할 것.**
+//
+// 배포 직후 아직 열려 있던 탭이 예전 번들로 GET 을 쏘기 때문에만 남겨 둔다. 새 코드는
+// 전부 POST(fetchChart)를 쓴다. 기한을 박아 두는 이유: 이 경로로 오는 요청은 여전히
+// 생년월일·출생지를 쿼리스트링에 실어 서버 로그에 남긴다 — POST 화의 목적 그 자체를
+// 비켜 간다. 열려 있던 탭은 며칠이면 사라지므로, 그 뒤로는 크롤러·공유된 링크만 남는다.
 export async function GET(request: Request) {
   const sp = new URL(request.url).searchParams;
-  return proxy(Object.fromEntries(sp.entries()));
+  const get = (k: string) => sp.get(k) ?? undefined;
+  return proxy(toSajuInput(get), pickExtra(get));
 }

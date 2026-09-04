@@ -16,6 +16,26 @@ export interface SajuInput {
 
 export const SAJU_STORAGE_KEY = "wolune_saju_input";
 
+// 바깥에서 들어온 값(쿼리스트링·JSON 본문) → SajuInput.
+//
+// 왜 한 곳인가: 이 "엔진 입력 계약"(기본값 female/solar, 빈 값은 undefined)을 손으로 두 번
+// 적어 두면 반드시 어긋난다 — 실제로 프록시는 boolean is_leap_month 를 받고 SSR 경로는
+// 문자열 "1" 만 받는 상태로 갈라져 있었다. 새 필드도 여기 한 줄만 늘리면 된다.
+//
+// [get] 은 키 하나를 문자열로 꺼내는 함수다. 쿼리스트링이든 JSON 본문이든 이 모양으로
+// 감싸서 넘긴다 — 그래야 "문자열이냐 boolean 이냐" 같은 전송 형식 사정이 여기 스며들지 않는다.
+export function toSajuInput(get: (key: string) => string | undefined): SajuInput {
+  const v = (k: string) => (get(k) || "").trim();
+  return {
+    date: v("date"),
+    time: v("time") || undefined,
+    city: v("city") || undefined,
+    gender: v("gender") === "male" ? "male" : "female",
+    calendar: v("calendar") === "lunar" ? "lunar" : "solar",
+    is_leap_month: v("is_leap_month") === "1" || undefined,
+  };
+}
+
 export async function saveSajuInput(input: SajuInput): Promise<void> {
   try {
     const uid = await ensureSignedIn();

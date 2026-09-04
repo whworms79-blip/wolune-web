@@ -253,7 +253,7 @@ export default function ResultView({
                 <ul className="relations__list">
                   {v.relations.map((r, i) => (
                     <li className={`relation relation--${r.kind}`} key={i}>
-                      <span className="relation__badge">
+                      <span className="relation__badge gloss-inherit">
                         <GlossaryTerm term={r.term} label={r.label} />
                       </span>
                       <span className="relation__body">
@@ -282,7 +282,7 @@ export default function ResultView({
                   <ul className="shenshabasis__list">
                     {v.shenshaRows.map((sr) => (
                       <li className="shenshabasis__row" key={sr.name}>
-                        <span className="shenshabasis__name">
+                        <span className="shenshabasis__name gloss-inherit">
                           <GlossaryTerm term={sr.name} />
                           {sr.hanja && <span className="shenshabasis__hanja">{sr.hanja}</span>}
                         </span>

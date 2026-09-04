@@ -43,11 +43,13 @@ export function CarryOverDialog() {
   }, []);
 
   // 새로고침 직후 — 앞 페이지가 남긴 안내를 띄운다.
+  // sessionStorage 역시 서버에 없다(렌더 중 읽기 불가). 마운트 뒤 한 번만 읽고 비운다.
   useEffect(() => {
     try {
       const msg = sessionStorage.getItem(NOTICE_KEY);
       if (msg) {
         sessionStorage.removeItem(NOTICE_KEY);
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- 클라이언트 전용 값(SSR 불일치 방지)
         setNotice(msg);
         const t = window.setTimeout(() => setNotice(""), 5200);
         return () => window.clearTimeout(t);

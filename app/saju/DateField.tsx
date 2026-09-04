@@ -39,10 +39,14 @@ export default function DateField({
   const [view, setView] = useState({ year: value.year, month: value.month });
   const rootRef = useRef<HTMLDivElement>(null);
 
-  // 열 때 현재 선택값으로 달력 뷰 동기화
-  useEffect(() => {
-    if (open) setView({ year: value.year, month: value.month });
-  }, [open, value.year, value.month]);
+  // 열 때 현재 선택값으로 달력 뷰 동기화 — **여는 순간에** 맞춘다.
+  // (이펙트로 하면 열림→렌더→다시 setState 로 한 번 더 렌더된다. 여는 건 사용자의 행동이니
+  //  그 행동을 처리하는 자리에서 정하는 게 맞다. 날짜를 고르면 곧바로 닫히므로,
+  //  열려 있는 동안 값이 바뀌어 뷰가 따라가야 하는 경우는 없다.)
+  function togglePicker() {
+    if (!open) setView({ year: value.year, month: value.month });
+    setOpen((o) => !o);
+  }
 
   // 바깥 클릭 / ESC 로 닫기
   useEffect(() => {
@@ -96,7 +100,7 @@ export default function DateField({
         <button
           type="button"
           className="wl-input datepicker__trigger"
-          onClick={() => setOpen((o) => !o)}
+          onClick={togglePicker}
           aria-haspopup="dialog"
           aria-expanded={open}
         >

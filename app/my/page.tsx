@@ -66,19 +66,24 @@ function fmtBirth(date: string): string {
   const m = date.match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
   return m ? `${m[1]}년 ${parseInt(m[2], 10)}월 ${parseInt(m[3], 10)}일` : date;
 }
-// "23:05" → "오후 11:05". 단, 시진 중간값(예: 축시의 02:30)으로 저장된 값은 시진으로
-// 되돌려 보여준다 — "오전 2:30"으로 보여주면 축시를 고른 사람이 혼란스럽다(온보딩 역매핑과 동일 규칙).
+// "23:05" → "오후 11:05". 저장된 값이 시진 중간값(예: 축시의 02:30)이면 시진을 **덧붙인다**.
+//
+// ⚠ 시진으로 **대체하지 않는다.** 저장 스키마엔 "시진을 골랐는지 시각을 직접 넣었는지"가
+//   없어서 둘을 구분할 수 없다. 대체하면 '정확한 시각'으로 02:30·12:30 같은 반시각을 직접
+//   입력한 사람에게 그의 정밀한 입력이 2시간 범위로 뭉개져 보인다(실제로 흔한 입력값이다).
+//   병기하면 어느 쪽으로 넣었든 잃는 정보가 없다 — 시진을 고른 사람은 "축시"를 알아보고,
+//   시각을 넣은 사람은 자기가 넣은 시각을 그대로 확인한다.
 function fmtTime(hhmm?: string): string {
   if (!hhmm) return "모름";
-  const sj = sijinOfTime(hhmm);
-  if (sj) return `${sj.name} (${sj.daily})`;
   const m = hhmm.match(/^(\d{1,2}):(\d{2})/);
   if (!m) return hhmm;
   const h = parseInt(m[1], 10);
   const ap = h < 12 ? "오전" : "오후";
   let h12 = h % 12;
   if (h12 === 0) h12 = 12;
-  return `${ap} ${h12}:${m[2]}`;
+  const clock = `${ap} ${h12}:${m[2]}`;
+  const sj = sijinOfTime(hhmm);
+  return sj ? `${clock} (${sj.name})` : clock;
 }
 
 interface Chart {

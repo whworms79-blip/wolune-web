@@ -312,8 +312,6 @@
   border: 1px solid var(--lavender);
   color: var(--lavender);
 }
-.meet__chip .gloss__term { color: inherit; border-bottom-color: currentColor; }
-.meet__chip .gloss__mark { color: inherit; font-size: 0.66em; opacity: 0.7; }
 .meet__line { margin: 0; }
 
 /* ---------- 상태(로딩/오류) ---------- */

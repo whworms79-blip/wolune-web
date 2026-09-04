@@ -320,6 +320,10 @@ export default function PrivacyPage() {
           </div>
         </Section>
 
+        <p className="pv-req">
+          <Link href="/account/delete">계정 삭제 안내 →</Link>
+        </p>
+
         <p className="pv-outro">
           달이 어둠을 몰아내지 않고 은은히 밝히듯, 우리도 당신의 이야기를 함부로 다루지
           않겠습니다.

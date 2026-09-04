@@ -276,6 +276,35 @@ export async function finishKakaoLogin(code: string): Promise<GoogleLinkResult> 
 //
 // ⚠️ wl_returning 플래그는 **일부러 지우지 않는다.** 그게 요점이다 — 다시 왔을 때
 // "다시 만나 반가워요"로 맞이하려면 이 기기가 그를 기억해야 한다(returning.ts 참고).
+// 계정 삭제 — 데이터·카카오 매핑·인증 계정을 **서버가** 지운다(netlify/functions/delete-account).
+//
+// 왜 클라이언트가 직접 안 지우나: 지우다 중간에 끊기고 인증 계정만 사라지면 남은 Firestore
+// 문서는 아무도 못 지운다(보안 규칙이 `request.auth.uid == uid` 라 그 uid 로 다시 로그인할
+// 방법이 없다). kakaoUsers 매핑은 애초에 클라이언트 권한 밖이라 서버만 지울 수 있다.
+//
+// 성공하면 새 익명으로 갈아탄다 — 사이트는 계속 쓸 수 있어야 한다.
+// 실패는 false 로 알린다(조용히 성공한 척하면 사용자는 지워진 줄 알고 떠난다).
+export async function deleteAccount(): Promise<boolean> {
+  try {
+    const idToken = await auth.currentUser?.getIdToken();
+    if (!idToken) return false;
+    const res = await fetch("/.netlify/functions/delete-account", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ idToken }),
+    });
+    if (!res.ok) {
+      console.error("[account] 삭제 실패", res.status, await res.text().catch(() => ""));
+      return false;
+    }
+    await signOutToAnon();
+    return true;
+  } catch (e) {
+    console.error("[account] 삭제 실패", e);
+    return false;
+  }
+}
+
 export async function signOutToAnon(): Promise<void> {
   try {
     await signOut(auth);

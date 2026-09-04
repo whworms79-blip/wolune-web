@@ -47,3 +47,15 @@ export function lastProvider(): Provider | null {
     return null;
   }
 }
+
+/// 계정 삭제 시에만 지운다. **로그아웃 때는 지우지 않는다** — 다시 왔을 때
+/// "다시 만나 반가워요"로 맞이하려면 이 기기가 그를 기억해야 하니까(그게 이 모듈의 요점).
+/// 계정을 지운 사람에겐 그 인사가 틀렸다. (앱 returning.dart clear() 와 짝)
+export function clearReturning(): void {
+  try {
+    localStorage.removeItem(SEEN_KEY);
+    localStorage.removeItem(PROVIDER_KEY);
+  } catch {
+    /* 저장소를 못 써도 계정 삭제 자체는 이미 끝났다 */
+  }
+}

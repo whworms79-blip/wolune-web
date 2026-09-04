@@ -9,6 +9,7 @@ import {
   type SajuInput,
 } from "../lib/sajuInput";
 import { clearMoodJournal } from "../lib/moodJournal";
+import { clearReturning } from "../lib/returning";
 import { sijinOfTime } from "../lib/sijin";
 import {
   currentEmail,
@@ -17,6 +18,7 @@ import {
   linkGoogle,
   onAuthChange,
   signOutToAnon,
+  deleteAccount,
 } from "../lib/firebase";
 import { KakaoButton } from "../lib/LinkAccount";
 import "./my.css";
@@ -57,6 +59,7 @@ const InfoIcon = () => (<svg viewBox="0 0 24 24" {...ico}><circle cx="12" cy="12
 const Bell = () => (<svg viewBox="0 0 24 24" {...ico}><path d="M18 9a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6" /><path d="M10.5 20a2 2 0 0 0 3 0" /></svg>);
 const Trash = () => (<svg viewBox="0 0 24 24" {...ico}><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13" /></svg>);
 const Shield = () => (<svg viewBox="0 0 24 24" {...ico}><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z" /></svg>);
+const UserMinus = () => (<svg viewBox="0 0 24 24" {...ico}><circle cx="10" cy="8" r="4" /><path d="M3 20a7 7 0 0 1 12-5M16 17h6" /></svg>);
 const Pencil = () => (<svg viewBox="0 0 24 24" {...ico}><path d="M4 20h4L18 10l-4-4L4 16v4Z" /><path d="M13.5 6.5l4 4" /></svg>);
 
 /* ---------- 표시용 헬퍼 ---------- */
@@ -96,6 +99,8 @@ export default function MyPage() {
   const [chart, setChart] = useState<Chart | null>(null);
   const [ready, setReady] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [signOutOpen, setSignOutOpen] = useState(false);
   const [toast, setToast] = useState("");
   // 로그인 상태
@@ -181,6 +186,29 @@ export default function MyPage() {
     setToast("내 데이터를 모두 초기화했어요");
     window.setTimeout(() => setToast(""), 2400);
     await Promise.all([clearSajuInput(), clearMoodJournal()]);
+  }
+
+  // 계정 삭제 — 데이터 초기화와 **다른 것**이다.
+  //   초기화: 사주·기록만 지우고 계정은 남는다(다시 로그인하면 그 계정으로 돌아온다).
+  //   삭제:   계정 자체가 사라진다. 같은 소셜 계정으로 다시 들어와도 새 사람이다.
+  // Play 정책이 앱·웹 양쪽에 삭제 경로를 요구한다.
+  async function handleDeleteAccount() {
+    if (deleting) return;
+    setDeleting(true);
+    const ok = await deleteAccount();
+    setDeleting(false);
+    if (!ok) {
+      // 실패를 성공처럼 넘기지 않는다 — 지워진 줄 알고 떠나면 데이터가 그대로 남는다.
+      setToast("계정을 삭제하지 못했어요. 잠시 후 다시 시도해주세요.");
+      window.setTimeout(() => setToast(""), 3200);
+      return;
+    }
+    clearReturning();
+    setDeleteOpen(false);
+    setInput(null);
+    setChart(null);
+    setToast("계정을 삭제했어요");
+    window.setTimeout(() => setToast(""), 2400);
   }
 
   const character = chart?.character;
@@ -374,11 +402,26 @@ export default function MyPage() {
                 <Trash /> 내 데이터 초기화
               </button>
               <p className="wl-caption data-note">
-                이 기기에 저장된 사주 정보와 무드저널 기록을 모두 지워요. 되돌릴 수 없어요.
+                사주 정보와 무드저널 기록을 지워요. 계정은 남아서, 다시 로그인하면 그대로 이어져요.
+              </p>
+              {/* 계정 삭제 — 초기화와 다른 것이라 따로 둔다(Play 정책 필수 항목) */}
+              <button
+                type="button"
+                className="danger-btn danger-btn--spaced"
+                onClick={() => setDeleteOpen(true)}
+                disabled={deleting}
+              >
+                <UserMinus /> {deleting ? "삭제하는 중…" : "계정 삭제"}
+              </button>
+              <p className="wl-caption data-note">
+                계정과 모든 기록이 완전히 사라져요. 되돌릴 수 없어요.
               </p>
               {/* 정보주체의 권리 행사 지점(삭제)과 같은 자리에 방침을 둔다 */}
               <Link className="privacy-link" href="/privacy">
                 <Shield /> 개인정보처리방침
+              </Link>
+              <Link className="privacy-link" href="/account/delete">
+                <UserMinus /> 계정 삭제 안내
               </Link>
             </section>
           </div>
@@ -438,6 +481,34 @@ export default function MyPage() {
               </button>
               <button type="button" className="danger-btn" onClick={handleReset}>
                 초기화
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 계정 삭제 확인 모달 */}
+      {deleteOpen && (
+        <div className="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="delete-title">
+          <div className="confirm-modal__backdrop" onClick={() => !deleting && setDeleteOpen(false)} />
+          <div className="confirm-modal__card">
+            <h2 className="wl-title-m confirm-modal__title" id="delete-title">계정을 삭제할까요?</h2>
+            <p className="wl-body-s confirm-modal__body">
+              사주·무드저널·계정 연결이 모두 지워져요. 되돌릴 수 없어요.
+              <br />
+              같은 카카오·구글 계정으로 다시 로그인해도 예전 기록은 돌아오지 않아요.
+            </p>
+            <div className="confirm-modal__actions">
+              <button
+                type="button"
+                className="wl-btn wl-btn--ghost"
+                onClick={() => setDeleteOpen(false)}
+                disabled={deleting}
+              >
+                취소
+              </button>
+              <button type="button" className="danger-btn" onClick={handleDeleteAccount} disabled={deleting}>
+                {deleting ? "삭제하는 중…" : "계정 삭제"}
               </button>
             </div>
           </div>

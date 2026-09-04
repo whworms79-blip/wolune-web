@@ -12,7 +12,7 @@
 
 import { X509Certificate, createSign, createVerify } from "node:crypto";
 
-const sa = () => JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+export const sa = () => JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
 const b64u = (b) => Buffer.from(b).toString("base64url");
 const b64uJson = (o) => b64u(JSON.stringify(o));
@@ -39,7 +39,7 @@ async function googleCerts() {
   return certs;
 }
 
-async function verifyIdToken(idToken, projectId) {
+export async function verifyIdToken(idToken, projectId) {
   const [h, p, s] = String(idToken).split(".");
   if (!h || !p || !s) throw new Error("잘못된 ID 토큰 형식");
   const header = decodeSeg(h);
@@ -62,12 +62,15 @@ async function verifyIdToken(idToken, projectId) {
   return payload; // sub = uid
 }
 
-// ── 서비스계정 OAuth 액세스 토큰(Firestore REST 호출용) ──
-async function accessToken() {
+// ── 서비스계정 OAuth 액세스 토큰(Google REST 호출용) ──
+// scope 를 인자로 받는다 — 계정 삭제(delete-account)는 Firestore 외에 Identity Toolkit
+// 권한도 필요해서 다른 scope 를 쓴다. 기본값은 기존 동작 그대로(Firestore 전용).
+export const SCOPE_DATASTORE = "https://www.googleapis.com/auth/datastore";
+export async function accessToken(scope = SCOPE_DATASTORE) {
   const now = Math.floor(Date.now() / 1000);
   const assertion = signJwt({
     iss: sa().client_email,
-    scope: "https://www.googleapis.com/auth/datastore",
+    scope,
     aud: "https://oauth2.googleapis.com/token",
     iat: now,
     exp: now + 3600,

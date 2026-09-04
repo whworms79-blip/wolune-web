@@ -318,3 +318,8 @@
 
 /* 로그아웃 확인 — 두 번째 줄(다른 계정 안내)은 한 톤 낮게. */
 .confirm-modal__note { margin-top: 6px; line-height: 1.5; }
+
+/* 계정 삭제 — 초기화 버튼과 시각적으로 붙지 않게 간격을 준다.
+   둘은 결과가 전혀 다른 동작이라(기록만 삭제 / 계정 자체 삭제) 헷갈리면 안 된다. */
+.danger-btn--spaced { margin-top: 16px; }
+.danger-btn:disabled { opacity: 0.6; pointer-events: none; }

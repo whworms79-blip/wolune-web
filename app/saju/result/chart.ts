@@ -73,7 +73,19 @@ interface EngineRelation {
 }
 export interface EngineChart {
   input?: { birth_datetime_local?: string; hour_known?: boolean };
-  character?: { name_ko: string; name_en: string; tagline: string; selection_basis?: string };
+  character?: {
+    name_ko: string;
+    name_en: string;
+    tagline: string;
+    // 캐릭터가 왜 이 캐릭터인지 — 엔진이 구조화해서 준다.
+    //   representative_shensha: 표상 신살. 콤보면 "역마+백호" 처럼 '+' 로 이어진다.
+    //   day_master_element: 일간 오행(영문 키) — 신살이 하나도 없을 때의 근거.
+    // selection_basis 는 같은 내용의 사람 말 원문인데, 엔진 내부 표현("… fallback")이라
+    // 화면엔 쓰지 않는다(위 두 필드로 문장을 만든다).
+    representative_shensha?: string;
+    day_master_element?: ElKey;
+    selection_basis?: string;
+  };
   five_elements?: Record<ElKey, { pct: number }>;
   shensha?: { name: string; hanja?: string; pillars?: string[]; rule?: string }[];
   // 진태양시 보정 내역 — 화면은 총 보정 분(total_correction_min)만 쓴다(예: -41.2).
@@ -238,35 +250,45 @@ const REL_FEEL: Record<RelKind, string> = {
   clash: "부딪히는 기운",
   tension: "잔잔한 긴장",
 };
-// 한국어 조사 — 앞말의 받침 유무로 고른다.
+// 캐릭터 선택 근거 → 사람 말.
 //
-// 왜 필요한가: 신살·캐릭터 이름을 문장에 끼워 넣는데, 이름이 데이터라 무엇이 올지 모른다.
-// 조사를 고정하면 절반이 비문이 된다 — 신살은 역마·화개·도화가 모음 끝(→"가"),
-// 캐릭터 8종 중 등불·꽃·검·산 넷이 받침 끝(→"은")이다.
+// ★ 엔진의 selection_basis(사람 말 원문)를 **파싱하지 않는다.** 예전엔 정규식 세 개로
+//   "표상 신살 '역마' (년주)" 같은 문장을 되짚었는데, 같은 응답에 이미 구조화된 재료가
+//   들어 있었다(representative_shensha, day_master_element, shensha[].pillars).
+//   문장을 파싱하면 엔진이 공백 하나만 바꿔도 조용히 실패해 "신살 없음 → 일간 오행(수)
+//   fallback" 같은 내부 표현이 사용자 화면에 그대로 나간다. 재료로 만들면 그럴 일이 없다.
 //
-// 한글 음절은 U+AC00부터 (초성×21×28 + 중성×28 + 종성) 순으로 늘어서므로,
-// (코드 - 0xAC00) % 28 이 0이면 받침이 없다. 한글이 아닌 글자(한자·숫자)는 판단할 수 없어
-// 받침 있음으로 본다 — 한자어는 대개 받침으로 읽히고, 여기 오는 값은 모두 한글이다.
-export function josa(word: string, withBatchim: string, withoutBatchim: string): string {
-  const last = word.charCodeAt(word.length - 1);
-  const isHangul = last >= 0xac00 && last <= 0xd7a3;
-  const hasBatchim = !isHangul || (last - 0xac00) % 28 !== 0;
-  return hasBatchim ? withBatchim : withoutBatchim;
-}
+// 세 갈래는 rep 하나로 갈린다(엔진 compute_character 와 같은 순서):
+//   ① rep 에 '+' 가 있으면      → 콤보
+//   ② rep 이 신살 목록에 있으면 → 표상 신살(그 신살의 기둥을 그대로 쓴다)
+//   ③ 둘 다 아니면             → 신살이 하나도 없어 일간 오행으로 정한 경우
+//      (실측상 매우 드물다 — 1950~2010 표본 2,928건에 0건. 그래도 엔진에 있는 길이라 덮는다)
+export function charBasisText(
+  character: NonNullable<EngineChart["character"]> | undefined,
+  shenshaRows: { name: string; where: string }[],
+): string {
+  const rep = character?.representative_shensha?.trim();
+  // 근거를 모르면 아무 말도 하지 않는다 — 지어내거나 내부 표현을 흘리는 것보다 낫다.
+  if (!rep) return "";
 
-// 캐릭터 selection_basis(엔진 원문) → 사람 말.
-//   "표상 신살 '역마' (연지)"            → "연지에 깃든 역마가 대표 결이 되었어요"
-//   "콤보(역마+백호)"                    → "역마와 백호, 두 신살이 함께 만든 조합이에요"
-//   "신살 없음 → 일간 오행(수) fallback" → "두드러진 신살이 없어 …"
-function charBasisText(basis?: string): string {
-  if (!basis) return "";
-  let m = basis.match(/^표상 신살 '(.+)' \((.+)\)$/);
-  if (m) return `${m[2]}에 깃든 ${m[1]}${josa(m[1], "이", "가")} 대표 결이 되었어요`;
-  m = basis.match(/^콤보\((.+)\+(.+)\)$/);
-  if (m) return `${m[1]}와 ${m[2]}, 두 신살이 함께 만든 조합이에요`;
-  m = basis.match(/^신살 없음 → 일간 오행\((.+)\) fallback$/);
-  if (m) return `두드러진 신살이 없어, 일간의 오행(${m[1]})이 지닌 기본 결로 정했어요`;
-  return basis;
+  if (rep.includes("+")) {
+    const [a, b] = rep.split("+");
+    return `${a}와 ${b}, 두 신살이 함께 만든 조합이에요`;
+  }
+
+  const row = shenshaRows.find((r) => r.name === rep);
+  if (row) {
+    const j = iGa(rep);
+    return row.where
+      ? `${row.where}에 깃든 ${rep}${j} 대표 결이 되었어요`
+      : `${rep}${j} 대표 결이 되었어요`;
+  }
+
+  const el = character?.day_master_element;
+  const elKo = el ? EL_KO[el] : "";
+  return elKo
+    ? `두드러진 신살이 없어, 일간의 오행(${elKo})이 지닌 기본 결로 정했어요`
+    : "두드러진 신살이 없어, 일간의 오행이 지닌 기본 결로 정했어요";
 }
 
 function relKind(type: string): RelKind {
@@ -290,6 +312,13 @@ const TEN_GOD_NATURE: Record<string, string> = {
 };
 
 // ── 한국어 조사 헬퍼 ──
+//
+// 왜 필요한가: 문장에 끼워 넣는 이름이 **데이터**라(신살·캐릭터명은 엔진이 준다) 조사를
+// 고정하면 절반이 비문이 된다 — 신살은 역마·화개·도화가 모음 끝, 캐릭터 8종 중
+// 등불·꽃·검·산 넷이 받침 끝이다. 실제로 그렇게 깨졌었다(2026-09-04 검수).
+//
+// 한글 음절은 U+AC00부터 (초성×21×28 + 중성×28 + 종성) 순으로 늘어서므로,
+// (코드 - 0xAC00) % 28 이 0이면 받침이 없다. 한글이 아닌 글자는 받침 없음으로 본다.
 function hasJong(word: string): boolean {
   const c = word.charCodeAt(word.length - 1);
   return c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 !== 0;
@@ -298,7 +327,7 @@ const iGa = (w: string) => (hasJong(w) ? "이" : "가");
 const iRaNeun = (w: string) => (hasJong(w) ? "이라는" : "라는");
 const eulReul = (w: string) => (hasJong(w) ? "을" : "를");
 const euRo = (w: string) => (hasJong(w) ? "으로" : "로");
-const eunNeun = (w: string) => (hasJong(w) ? "은" : "는");
+export const eunNeun = (w: string) => (hasJong(w) ? "은" : "는");
 const gwaWa = (w: string) => (hasJong(w) ? "과" : "와");
 
 function fmtPct(p: number): string {
@@ -392,9 +421,8 @@ export function buildView(
     where: (s.pillars || []).join("·"),
     rule: s.rule || "",
   }));
-  // 캐릭터 선택 근거 — 엔진 selection_basis 세 형태를 사람 말로 푼다. 모르는 형태면 원문 그대로
-  // (없는 것보단 낫다 — 다만 엔진이 형태를 바꾸면 여기도 따라와야 한다).
-  const characterBasis = charBasisText(chart.character?.selection_basis);
+  // 캐릭터 선택 근거 — 엔진이 준 구조화 필드로 문장을 만든다(문자열 파싱 없음).
+  const characterBasis = charBasisText(chart.character, shenshaRows);
   // 진태양시 총 보정 — 음수면 시계보다 이른 시각 기준. |1분| 미만이면 굳이 말하지 않는다.
   //
   // ★ 시간을 모르는 사주에는 **절대 쓰지 않는다.** 엔진은 시각이 없으면 정오를 대입해

@@ -4,7 +4,7 @@
 // 서버 경로(파라미터 진입, 공유·익명)와 클라 경로(무파라미터 진입, 로그인/익명 본인이 Firestore
 // 에서 읽음)가 **같은 컴포넌트**를 쓴다 — 화면이 한 벌만 존재하도록. (개인정보 URL 노출 제거)
 import Link from "next/link";
-import { buildView, josa, type EngineChart } from "./chart";
+import { buildView, eunNeun, type EngineChart } from "./chart";
 import { GlossaryText, GlossaryTerm, GlossaryProvider } from "./Glossary";
 import type { GlossaryData } from "../../lib/glossary";
 import { LinkResultCard } from "../../lib/LinkAccount";
@@ -274,7 +274,7 @@ export default function ResultView({
                 <h3 className="relations__title">캐릭터와 신살의 근거</h3>
                 {v.characterBasis && (
                   <p className="relations__sub">
-                    &lsquo;{v.character.name_ko}&rsquo;{josa(v.character.name_ko, "은", "는")} 이렇게
+                    &lsquo;{v.character.name_ko}&rsquo;{eunNeun(v.character.name_ko)} 이렇게
                     정해졌어요 — {v.characterBasis}.
                   </p>
                 )}

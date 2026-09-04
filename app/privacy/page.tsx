@@ -174,8 +174,15 @@ export default function PrivacyPage() {
               지나서가 아니라, <strong>당신이 지우기로 하실 때</strong> 지웁니다.
             </li>
             <li>
-              <strong>직접 지우기</strong> — <strong>마이 &gt; 내 데이터 초기화</strong>를 누르면
-              저장된 사주 정보와 무드 기록이 삭제됩니다.
+              <strong>기록만 지우기</strong> — <strong>마이 &gt; 내 데이터 초기화</strong>를 누르면
+              저장된 사주 정보와 무드 기록이 삭제됩니다. 계정은 남아, 다시 로그인하면 이어서
+              쓰실 수 있습니다.
+            </li>
+            <li>
+              <strong>계정까지 지우기</strong> — <strong>마이 &gt; 계정 삭제</strong>를 누르면
+              사주·무드 기록·계정 연결·로그인 계정이 <strong>모두 즉시</strong> 삭제됩니다.
+              되돌릴 수 없고, 같은 카카오·구글 계정으로 다시 로그인해도 예전 기록은
+              돌아오지 않습니다. (<Link href="/account/delete">자세한 안내</Link>)
             </li>
             <li>
               <strong>파기 방법</strong> — 데이터베이스에서 지체 없이 삭제하며, 백업본에 남은
@@ -183,8 +190,10 @@ export default function PrivacyPage() {
               자동으로 삭제됩니다.
             </li>
             <li>
-              <strong>계정을 지우고 싶다면</strong> — <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> 로 알려주시면 계정과 남은
-              정보 일체를 삭제해 드립니다.
+              <strong>앱을 이미 지우셨다면</strong> — 앱이 없어도 계정은 남아 있습니다.
+              웹(<Link href="/my">마이</Link>)에서 같은 방법으로 지우시거나,
+              <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> 로 알려주시면 확인 후
+              삭제해 드립니다.
             </li>
           </ul>
           <p className="pv-note">
@@ -261,8 +270,9 @@ export default function PrivacyPage() {
             <tbody>
               <tr><td>열람</td><td><strong>마이</strong>에서 저장된 사주 정보를, <strong>기록</strong>에서 남긴 무드를 확인</td></tr>
               <tr><td>정정</td><td><strong>사주</strong> 화면에서 생년월일·시각·출생지·성별을 다시 입력</td></tr>
-              <tr><td>삭제</td><td><strong>마이 &gt; 내 데이터 초기화</strong></td></tr>
-              <tr><td>처리정지·계정 삭제</td><td><a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> 로 요청 (본인 확인 후 처리)</td></tr>
+              <tr><td>삭제(기록)</td><td><strong>마이 &gt; 내 데이터 초기화</strong></td></tr>
+              <tr><td>삭제(계정까지)</td><td><strong>마이 &gt; 계정 삭제</strong> — 즉시 처리됩니다 (<Link href="/account/delete">안내</Link>)</td></tr>
+              <tr><td>처리정지</td><td><a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> 로 요청 (본인 확인 후 처리)</td></tr>
             </tbody>
           </table>
           <p className="pv-note">

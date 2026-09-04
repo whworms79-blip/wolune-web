@@ -60,13 +60,19 @@ async function proxy(raw: Record<string, unknown>): Promise<Response> {
 }
 
 export async function POST(request: Request) {
-  let raw: Record<string, unknown>;
+  let parsed: unknown;
   try {
-    raw = (await request.json()) as Record<string, unknown>;
+    parsed = await request.json();
   } catch {
     return Response.json({ error: "bad_request" }, { status: 400 });
   }
-  return proxy(raw);
+  // ⚠ 파싱 성공 ≠ 객체. 본문 "null"·"[]"·"3" 은 전부 유효한 JSON 이라 위 catch 를 지나치고,
+  //   proxy 안에서 raw[k] 접근이 TypeError 로 터져 400 대신 500 이 나간다(로그도 더럽힌다).
+  //   봇·헬스체커·잘못된 재시도가 실제로 이런 본문을 보낸다.
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return Response.json({ error: "bad_request" }, { status: 400 });
+  }
+  return proxy(parsed as Record<string, unknown>);
 }
 
 // 옛 번들 폴백 — 배포 직후 아직 열려 있던 탭은 예전 번들로 GET 을 쏜다. 그들을 깨뜨리지

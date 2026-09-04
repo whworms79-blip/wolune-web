@@ -238,6 +238,22 @@ const REL_FEEL: Record<RelKind, string> = {
   clash: "부딪히는 기운",
   tension: "잔잔한 긴장",
 };
+// 한국어 조사 — 앞말의 받침 유무로 고른다.
+//
+// 왜 필요한가: 신살·캐릭터 이름을 문장에 끼워 넣는데, 이름이 데이터라 무엇이 올지 모른다.
+// 조사를 고정하면 절반이 비문이 된다 — 신살은 역마·화개·도화가 모음 끝(→"가"),
+// 캐릭터 8종 중 등불·꽃·검·산 넷이 받침 끝(→"은")이다.
+//
+// 한글 음절은 U+AC00부터 (초성×21×28 + 중성×28 + 종성) 순으로 늘어서므로,
+// (코드 - 0xAC00) % 28 이 0이면 받침이 없다. 한글이 아닌 글자(한자·숫자)는 판단할 수 없어
+// 받침 있음으로 본다 — 한자어는 대개 받침으로 읽히고, 여기 오는 값은 모두 한글이다.
+export function josa(word: string, withBatchim: string, withoutBatchim: string): string {
+  const last = word.charCodeAt(word.length - 1);
+  const isHangul = last >= 0xac00 && last <= 0xd7a3;
+  const hasBatchim = !isHangul || (last - 0xac00) % 28 !== 0;
+  return hasBatchim ? withBatchim : withoutBatchim;
+}
+
 // 캐릭터 selection_basis(엔진 원문) → 사람 말.
 //   "표상 신살 '역마' (연지)"            → "연지에 깃든 역마가 대표 결이 되었어요"
 //   "콤보(역마+백호)"                    → "역마와 백호, 두 신살이 함께 만든 조합이에요"
@@ -245,7 +261,7 @@ const REL_FEEL: Record<RelKind, string> = {
 function charBasisText(basis?: string): string {
   if (!basis) return "";
   let m = basis.match(/^표상 신살 '(.+)' \((.+)\)$/);
-  if (m) return `${m[2]}에 깃든 ${m[1]}이 대표 결이 되었어요`;
+  if (m) return `${m[2]}에 깃든 ${m[1]}${josa(m[1], "이", "가")} 대표 결이 되었어요`;
   m = basis.match(/^콤보\((.+)\+(.+)\)$/);
   if (m) return `${m[1]}와 ${m[2]}, 두 신살이 함께 만든 조합이에요`;
   m = basis.match(/^신살 없음 → 일간 오행\((.+)\) fallback$/);
@@ -380,10 +396,19 @@ export function buildView(
   // (없는 것보단 낫다 — 다만 엔진이 형태를 바꾸면 여기도 따라와야 한다).
   const characterBasis = charBasisText(chart.character?.selection_basis);
   // 진태양시 총 보정 — 음수면 시계보다 이른 시각 기준. |1분| 미만이면 굳이 말하지 않는다.
+  //
+  // ★ 시간을 모르는 사주에는 **절대 쓰지 않는다.** 엔진은 시각이 없으면 정오를 대입해
+  //   계산하므로 true_solar_time_applied 도 true 고 보정 분도 실려 온다(실측: -41.7분).
+  //   그걸 그대로 보여주면 "당신이 준 시각을 42분 당겼다"는 정량 주장이 되는데,
+  //   사용자는 시각을 준 적이 없다. 한계를 공개하는 제품이 없는 정밀도를 자랑하는 꼴이다.
+  //   → hour_known 이 참일 때만 말한다. (배지 자체는 "표준시/진태양시" 표기라 그대로 둔다)
   const corrMin = chart.true_solar_time?.total_correction_min;
   const corrAbs = typeof corrMin === "number" ? Math.round(Math.abs(corrMin)) : 0;
   const trueSolarCorr =
-    chart.calc_meta?.true_solar_time_applied && typeof corrMin === "number" && corrAbs >= 1
+    chart.input?.hour_known &&
+    chart.calc_meta?.true_solar_time_applied &&
+    typeof corrMin === "number" &&
+    corrAbs >= 1
       ? `${corrAbs}분 ${corrMin < 0 ? "이른" : "늦은"}`
       : "";
 

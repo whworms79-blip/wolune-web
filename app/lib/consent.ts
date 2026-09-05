@@ -97,6 +97,23 @@ export function isConsentValid(c: Consent | null | undefined): boolean {
 export async function readConsent(uid: string): Promise<ConsentVerdict> {
   try {
     const snap = await readUserDoc(uid);
+
+    // ★ **문서가 아예 없으면 "동의 안 함"이 아니라 "모름"이다.**
+    //
+    // 예전엔 없으면 곧바로 "no" 였고, 그게 7주간 안 잡히던 버그의 마지막 조각이었다.
+    // 카카오 로그인 직후 토큰이 자리 잡기 전의 읽기는 멀쩡한 문서를 "없음"으로 돌려주는데
+    // (2026-09-05 라이브 로그: 동의 판정과 이어붙이기가 같은 문서를 함께 "비었다"고 읽음),
+    // 그걸 "no" 로 단정하는 순간 **이미 동의한 사람에게 시트가 뜬다.**
+    //
+    // 그럼 진짜 신규 사용자는? 그들도 "모름"이 되지만 잃는 게 없다:
+    //   · 홈의 부드러운 권유는 침묵한다 — 모르면서 조르지 않는 게 원래 원칙이다
+    //   · 기록을 저장하려는 순간 requestConsent 가 다시 확인하고 시트를 띄운다
+    //     → **동의 없이 쓰기가 일어나지 않는다는 법적 요건은 그대로 지켜진다**
+    // 게다가 온보딩에서 동의를 받고 저장하므로, 로그인한 사용자에게 문서가 통째로 없는 건
+    // "신규"보다 "아직 안 보이는 것"일 가능성이 훨씬 크다.
+    if (!snap.exists()) return { uid, status: "unknown" };
+
+    // 문서는 있는데 동의가 없거나 낡았다 → 이건 확인된 "no" 다.
     return {
       uid,
       status: isConsentValid(snap.data()?.consent as Consent | undefined) ? "yes" : "no",

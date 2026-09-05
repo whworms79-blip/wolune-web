@@ -113,4 +113,24 @@ describe("readUserDoc", () => {
     expect(h.getDocFromServer).toHaveBeenCalledTimes(2);
     vi.useRealTimers();
   });
+
+  it("★ 기본 예산이 3초를 넘는다 — 850ms 로는 모자랐다(2026-09-05 라이브)", async () => {
+    // 이 값을 줄이면 그때 그 버그가 그대로 돌아온다. 실측에서 토큰 교체 창이
+    // 850ms(= 옛 기본값 [250,600])를 넘겨, 동의 판정과 이어붙이기가 같은 문서를
+    // 함께 "비었다"고 읽었다. 있는 문서는 첫 읽기에 오므로 예산을 늘려도 비용은 0이다.
+    vi.useFakeTimers();
+    h.getDocFromServer.mockResolvedValue(missing()); // 끝까지 안 보이는 상황
+
+    const p = readUserDoc("bx6KyF5");
+    await vi.advanceTimersByTimeAsync(3000);
+    // 3초 시점에도 아직 재확인 중이어야 한다(= 예산이 3초보다 길다)
+    const callsAt3s = h.getDocFromServer.mock.calls.length;
+
+    await vi.advanceTimersByTimeAsync(5000);
+    await p;
+
+    expect(h.getDocFromServer.mock.calls.length).toBeGreaterThan(callsAt3s);
+    expect(h.getDocFromServer.mock.calls.length).toBeGreaterThanOrEqual(5);
+    vi.useRealTimers();
+  });
 });

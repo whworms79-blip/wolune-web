@@ -81,6 +81,21 @@ export async function applyCarryOver(snap: AnonSnapshot): Promise<CarryOutcome> 
   //   그 뒤에 moods 를 읽어야 믿을 수 있다. 병렬로 읽으면 moods 가 거짓 "비어 있음"으로 와서
   //   **기존 무드를 덮어쓴다** — 무드는 옛 것이 이겨야 하는데 정반대가 된다.
   const userSnap = await readUserDoc(uid);
+
+  // ★ 재확인까지 했는데도 문서가 없다 → **믿지 않고 포기한다.**
+  //
+  // 로그인해서 도착한 계정에 문서가 통째로 없는 건 두 경우다:
+  //   ① 진짜 첫 로그인(옮겨올 것도, 덮어쓸 것도 없다 — 포기해도 잃는 게 없다)
+  //   ② 토큰이 자리 잡기 전의 거짓 "없음"(2026-09-05 라이브에서 실제로 관측됐다)
+  // ②를 ①로 오해하면 **남의 진짜 계정을 '빈 계정'으로 보고 자동으로 덮어쓴다.**
+  // 두 경우를 구분할 방법이 없으므로, 안전한 쪽(아무것도 안 쓴다)을 택한다.
+  // 사용자는 잃는 게 없다 — 익명 데이터는 그 자리에 그대로 있고, 전체 새로고침 뒤
+  // 다시 로그인하면 정상 경로를 탄다.
+  if (!userSnap.exists()) {
+    console.warn("[carryover] 옛 계정 문서가 안 보임 — 이어붙이기 포기(덮어쓰기 방지)", uid);
+    return { kind: "none" };
+  }
+
   const moodSnap = await getDocsFromServer(collection(db, "users", uid, "moods"));
   const old = userSnap.data();
   const oldSaju = (old?.sajuInput as SajuInput | undefined) ?? null;

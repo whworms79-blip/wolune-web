@@ -21,7 +21,10 @@ vi.mock("./firestoreRead", () => ({ readUserDoc: h.readUserDoc }));
 
 const { readConsent, saveConsent, isConsentValid, CONSENT_VERSION } = await import("./consent");
 
-const snapOf = (data: unknown) => ({ data: () => data });
+// 실제 Firestore 스냅샷과 같은 모양(exists + data). readConsent 가 둘을 구분해 쓴다.
+const snapOf = (data: unknown) => ({ exists: () => true, data: () => data });
+/** 문서가 아예 없는 스냅샷 */
+const missingSnap = { exists: () => false, data: () => undefined };
 
 const validConsent = {
   privacy: true,
@@ -54,9 +57,22 @@ describe("readConsent", () => {
     await expect(readConsent("bx6KyF5")).resolves.toEqual({ uid: "bx6KyF5", status: "yes" });
   });
 
-  it("문서가 정말 없으면 no — 신규는 시트가 떠야 한다(법적 요건)", async () => {
-    h.readUserDoc.mockResolvedValue(snapOf(undefined));
-    await expect(readConsent("new-uid")).resolves.toEqual({ uid: "new-uid", status: "no" });
+  it("★ 문서가 아예 없으면 no 가 아니라 unknown — 이게 7주짜리 버그의 마지막 조각이었다", async () => {
+    // 왜 no 가 아닌가: 카카오 로그인 직후 토큰이 자리 잡기 전의 읽기는 멀쩡한 문서를
+    // "없음"으로 돌려준다(2026-09-05 라이브 로그로 확인). 그걸 no 로 단정하는 순간
+    // **이미 동의한 사람에게 시트가 뜬다.**
+    //
+    // 법적 요건("동의 없이 쓰기 금지")은 여기가 아니라 **저장 게이트**가 지킨다 —
+    // ConsentGate.requestConsent 는 unknown 이면 재확인하고, 그래도 yes 가 아니면
+    // 시트를 연다(ConsentGate.test.tsx C3). 홈의 부드러운 권유만 침묵할 뿐이다.
+    h.readUserDoc.mockResolvedValue(missingSnap);
+    await expect(readConsent("new-uid")).resolves.toEqual({ uid: "new-uid", status: "unknown" });
+  });
+
+  it("문서는 있는데 동의가 없으면 no — 이건 확인된 '없음'이다", async () => {
+    // 온보딩을 하다 만 사용자 등. 문서를 실제로 읽었으므로 단정해도 된다.
+    h.readUserDoc.mockResolvedValue(snapOf({ sajuInput: { date: "1990-03-15" } }));
+    await expect(readConsent("half")).resolves.toEqual({ uid: "half", status: "no" });
   });
 
   it("낡은 버전의 동의는 no", async () => {

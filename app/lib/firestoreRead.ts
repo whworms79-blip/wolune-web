@@ -23,8 +23,14 @@
 import { doc, getDocFromServer, type DocumentSnapshot } from "firebase/firestore";
 import { db } from "./firebase";
 
-/** 재확인 간격. 토큰 전파는 짧게 끝나므로 두 번이면 충분하다(실측 기준). */
-const DEFAULT_RETRY_MS = [250, 600] as const;
+// 재확인 간격(ms). 합계 약 3.7초까지 기다린다.
+//
+// ⚠ 예전엔 [250, 600] 두 번(=850ms)이었는데 **모자랐다.** 2026-09-05 라이브 로그에서
+//   그 창이 850ms 를 넘겨, 동의 판정과 이어붙이기가 **같은 문서를 동시에 "비었다"고** 읽었다:
+//     land bx6KyF5… => no   /   carryover 결과 = none
+//   실제로는 사주도 동의도 멀쩡히 있는 계정이었다(전체 새로고침하면 정상).
+//   있는 문서는 첫 읽기에 돌아오므로, 이 값을 늘려도 정상 사용자에겐 추가 비용이 0이다.
+const DEFAULT_RETRY_MS = [200, 400, 800, 1200, 1100] as const;
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 

@@ -62,8 +62,6 @@ export function CarryOverDialog() {
   useEffect(() => {
     async function onSwitched() {
       const snap = consumePending();
-      // 🔬 임시 계측 (2026-07-28) — 원인 확정 후 제거. grep: "🔬 임시 계측"
-      console.log("[wl] carryover 이벤트  snapshot =", snap ? `있음(uid=${snap.uid})` : "없음(null)");
       if (!snap) {
         settleCarryHandoff(false); // 옮길 게 없다 → 화면을 안 떠맡는다(호출부가 폴백)
         return;
@@ -72,7 +70,6 @@ export function CarryOverDialog() {
       let out: CarryOutcome;
       try {
         out = await applyCarryOver(snap);
-        console.log("[wl] carryover 결과 =", out.kind, out.kind === "carried" || out.kind === "returned" ? "→ 리로드함" : "→ 리로드 안함");
       } catch {
         // 이어붙이기 실패 — 로그인 자체는 유효. 화면은 호출부가 결과/신규로 마무리한다.
         settleCarryHandoff(false);

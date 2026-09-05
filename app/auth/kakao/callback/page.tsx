@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { confirmUid, finishKakaoLogin } from "../../../lib/firebase";
+import { confirmUid, finishKakaoLogin, isAnonymous } from "../../../lib/firebase";
 import { armCarryHandoff, disarmCarryHandoff } from "../../../lib/carryOver";
 import { loadSajuInput } from "../../../lib/sajuInput";
 import "./callback.css";
@@ -21,9 +21,24 @@ export default function KakaoCallbackPage() {
       const code = params.get("code");
       const err = params.get("error");
 
+      // ★ 인가 코드는 **일회용**이다. 이 화면이 다시 열리면(새로고침·뒤로가기) 이미 쓴 코드로
+      //   또 교환을 시도하고, 카카오가 거부해 401 이 난다. 그러면 **이미 로그인됐는데도**
+      //   "연결에 실패했어요" 가 뜨고 마이로 튕긴다(2026-09-05 라이브 콘솔에서 관측).
+      //   → 읽는 즉시 주소에서 지운다. 뒤로 와도 code 가 없으니 재시도 자체가 일어나지 않는다.
+      //   (덤: 인가 코드가 주소창·브라우저 기록에 남지 않는다)
+      if (code || err) {
+        window.history.replaceState(null, "", window.location.pathname);
+      }
+
       if (err || !code) {
-        setMsg("연결이 취소됐어요. 잠시 후 돌아갑니다…");
-        window.setTimeout(() => router.replace("/my"), 1400);
+        // 코드가 없다 — 취소했거나, 이미 처리하고 주소에서 지운 뒤 새로고침한 것이다.
+        // 후자라면 **이미 로그인돼 있다.** "취소됐어요" 는 그 사람에게 틀린 말이다.
+        await confirmUid();
+        const done = !err && !isAnonymous();
+        setMsg(
+          done ? "이미 연결돼 있어요. 돌아갑니다…" : "연결이 취소됐어요. 잠시 후 돌아갑니다…",
+        );
+        window.setTimeout(() => router.replace(done ? "/home" : "/my"), 1200);
         return;
       }
 

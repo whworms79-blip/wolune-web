@@ -1,26 +1,26 @@
 #!/bin/sh
-# 푸시할 커밋에 [skip ci] 가 없으면 막는다.
+# 푸시의 **맨 위 커밋**에 [skip ci] 가 없으면 막는다.
 #
-# 왜: 이 저장소는 Netlify git 자동배포가 붙어 있다. [skip ci] 없이 푸시하면
-#     Netlify 가 **서버에서 빌드를 돌리고 프로덕션 배포로 청구한다**(1회 15 크레딧).
-#     배포는 로컬 빌드 업로드(`npx netlify-cli deploy --prod --build`)로만 한다.
+# 왜: 이 저장소는 Netlify git 자동배포가 붙어 있다. [skip ci] 없이 푸시하면 Netlify 가
+#     **서버에서 빌드를 돌리고 프로덕션 배포로 청구한다(1회 15 크레딧)**.
+#     배포는 로컬 빌드 업로드로만 한다: npx netlify-cli deploy --prod --build
 #     2026-09-05 에 이 규칙을 어겨 실패한 서버 빌드 3건이 크레딧을 태웠다.
 #
+# 왜 맨 위 커밋만 보나: Netlify 는 푸시된 **HEAD 커밋의 메시지**로 skip 여부를 정한다.
+#     중간 커밋에 [skip ci] 가 없어도 HEAD 에 있으면 빌드는 돌지 않는다.
+#
 # 정말 자동배포를 원하면: git push --no-verify
-remote_ref=$(git rev-parse --abbrev-ref HEAD)
-upstream="origin/$remote_ref"
-range="$upstream..HEAD"
-git rev-parse --verify "$upstream" >/dev/null 2>&1 || range="HEAD"
+head_msg=$(git log -1 --format='%s%n%b')
+case "$head_msg" in
+  *"[skip ci]"*) exit 0 ;;
+esac
 
-bad=$(git log --format='%h %s' $range | grep -v '\[skip ci\]' || true)
-if [ -n "$bad" ]; then
-  echo ""
-  echo "✋ [skip ci] 없는 커밋이 있어 푸시를 막았습니다:"
-  echo "$bad" | sed 's/^/   /'
-  echo ""
-  echo "   이대로 푸시하면 Netlify 가 서버 빌드를 돌려 크레딧을 씁니다(1회 15)."
-  echo "   고치려면: git commit --amend  (제목 끝에 ' [skip ci]' 추가)"
-  echo "   정말 자동배포를 원하면: git push --no-verify"
-  echo ""
-  exit 1
-fi
+echo ""
+echo "✋ 맨 위 커밋에 [skip ci] 가 없어 푸시를 막았습니다:"
+echo "   $(git log -1 --format='%h %s')"
+echo ""
+echo "   이대로 푸시하면 Netlify 가 서버 빌드를 돌려 크레딧을 씁니다(1회 15)."
+echo "   고치려면: git commit --amend   (제목 끝에 ' [skip ci]' 추가)"
+echo "   정말 자동배포를 원하면: git push --no-verify"
+echo ""
+exit 1

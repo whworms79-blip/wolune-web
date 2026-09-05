@@ -103,7 +103,9 @@ describe("readUserDoc", () => {
 
   it("기본 재확인 간격이 설정돼 있다 (호출부가 인자 없이 써도 재확인된다)", async () => {
     vi.useFakeTimers();
-    h.getDocFromServer.mockResolvedValueOnce(missing()).mockResolvedValueOnce(present({}));
+    h.getDocFromServer
+      .mockResolvedValueOnce(missing())
+      .mockResolvedValueOnce(present({ consent: { privacy: true } }));
 
     const p = readUserDoc("bx6KyF5"); // retryMs 생략 → 기본값
     await vi.advanceTimersByTimeAsync(300);
@@ -112,6 +114,22 @@ describe("readUserDoc", () => {
     expect(snap.exists()).toBe(true);
     expect(h.getDocFromServer).toHaveBeenCalledTimes(2);
     vi.useRealTimers();
+  });
+
+  it("★★ '있지만 내용이 빈' 스냅샷도 재확인한다 — 2026-09-05 진짜 원인", async () => {
+    // Firestore 콘솔로 확정: 그 계정엔 consent 도 sajuInput 도 멀쩡히 있는데,
+    // 카카오 로그인 직후의 읽기는 **exists 는 true 인데 내용이 빈** 스냅샷을 돌려줬다.
+    // 예전 구현은 exists() 만 보고 그걸 정답으로 받아 즉시 반환했다 → 동의 시트 재노출.
+    // 이 시험이 깨지면 그 버그가 그대로 돌아온다.
+    const real = { consent: { privacy: true, age14: true, version: "2026-07-14" } };
+    h.getDocFromServer
+      .mockResolvedValueOnce(present({})) // 있지만 비어 있음 ← 믿으면 안 되는 답
+      .mockResolvedValueOnce(present(real));
+
+    const snap = await readUserDoc("bx6KyF5", NOW);
+
+    expect(h.getDocFromServer).toHaveBeenCalledTimes(2); // 한 번 더 물었다
+    expect(snap.data()).toEqual(real);
   });
 
   it("★ 기본 예산이 3초를 넘는다 — 850ms 로는 모자랐다(2026-09-05 라이브)", async () => {

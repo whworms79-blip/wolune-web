@@ -42,15 +42,34 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
  *
  * @param retryMs 재확인 간격(ms). 시험에서 `[0, 0]` 으로 넘겨 즉시 돌린다.
  */
+/**
+ * 쓸 만한 답인가 — **"문서가 있다"가 아니라 "내용이 있다"** 로 판단한다.
+ *
+ * ★ 2026-09-05, Firestore 콘솔로 확정한 사실:
+ *   users/bx6KyF5… 에는 유효한 consent 도 sajuInput 도 멀쩡히 들어 있는데,
+ *   카카오 로그인 직후의 읽기는 그 문서를 **"있지만 내용은 비어 있음"** 으로 돌려줬다.
+ *   그래서 동의 판정은 no, 이어붙이기는 '사주 없음' 이 됐다(같은 원인, 서로 다른 두 코드).
+ *
+ *   예전 구현은 `snap.exists()` 만 봤기 때문에 이 응답을 **정답으로 받아들이고 즉시 반환**했다.
+ *   "문서 없음"만 재확인하고 "내용 없음"은 재확인하지 않은 것 — 그게 7주간 안 잡힌 구멍이다.
+ *
+ * 정상 사용자 문서는 최소 한 필드(consent·sajuInput·linkedProvider 중 하나)를 갖는다.
+ * 필드가 하나도 없는 문서는 정상 상태가 아니므로 "아직 못 받았다"로 본다.
+ */
+const hasContent = (snap: DocumentSnapshot): boolean =>
+  snap.exists() && Object.keys(snap.data() ?? {}).length > 0;
+
 export async function readUserDoc(
   uid: string,
   retryMs: readonly number[] = DEFAULT_RETRY_MS,
 ): Promise<DocumentSnapshot> {
   let snap = await getDocFromServer(doc(db, "users", uid));
   for (const ms of retryMs) {
-    if (snap.exists()) return snap; // 있으면 끝 — 추가 비용 없음
+    if (hasContent(snap)) return snap; // 내용까지 온 답이면 끝 — 추가 비용 없음
     await sleep(ms);
     snap = await getDocFromServer(doc(db, "users", uid));
   }
-  return snap; // 재확인해도 없다 → 진짜 없는 것으로 본다
+  // 예산을 다 써도 내용이 없다 → 진짜 없는 것으로 본다(신규 사용자).
+  // 호출부는 이걸 '확정된 없음'으로 단정하지 않는다(consent.ts readConsent 참고).
+  return snap;
 }

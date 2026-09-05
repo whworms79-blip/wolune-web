@@ -111,12 +111,19 @@ export async function readConsent(uid: string): Promise<ConsentVerdict> {
     //     → **동의 없이 쓰기가 일어나지 않는다는 법적 요건은 그대로 지켜진다**
     // 게다가 온보딩에서 동의를 받고 저장하므로, 로그인한 사용자에게 문서가 통째로 없는 건
     // "신규"보다 "아직 안 보이는 것"일 가능성이 훨씬 크다.
-    if (!snap.exists()) return { uid, status: "unknown" };
+    // ★ "문서가 없다" 뿐 아니라 **"내용이 비어 있다"** 도 모름으로 본다.
+    //   2026-09-05 Firestore 콘솔로 확인: 그 계정엔 유효한 consent 가 분명히 있는데도
+    //   로그인 직후의 읽기는 내용이 빈 스냅샷을 돌려줬다(exists 는 true 였다).
+    //   그걸 "동의 안 함"으로 단정하는 순간 이미 동의한 사람에게 시트가 뜬다.
+    const data = snap.data();
+    if (!snap.exists() || !data || Object.keys(data).length === 0) {
+      return { uid, status: "unknown" };
+    }
 
     // 문서는 있는데 동의가 없거나 낡았다 → 이건 확인된 "no" 다.
     return {
       uid,
-      status: isConsentValid(snap.data()?.consent as Consent | undefined) ? "yes" : "no",
+      status: isConsentValid(data.consent as Consent | undefined) ? "yes" : "no",
     };
   } catch (e) {
     // 읽지 못한 것뿐이다 — "동의 안 함"으로 단정하지 않는다.

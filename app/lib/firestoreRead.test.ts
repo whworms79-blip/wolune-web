@@ -132,6 +132,36 @@ describe("readUserDoc", () => {
     expect(snap.data()).toEqual(real);
   });
 
+  it("★★★ 부분 문서(linkedProvider 만)를 정답으로 받지 않는다 — 2026-09-05 실측", async () => {
+    // 라이브 진단이 찍은 그대로:
+    //   no 판정 상세  | fromCache = false | keys = linkedProvider | consent = null
+    //   1.5초 뒤 재조회 | keys = consent,sajuInput,linkedProvider
+    // 서버 답인데도 필드가 하나뿐이었다(로그인 직후 쓰이는 linkedProvider 만 먼저 보인다).
+    // exists() 도, '필드 ≥ 1' 도 이걸 통과시킨다 → needs 로 기다려야 한다.
+    const partial = { linkedProvider: "kakao" };
+    const full = {
+      consent: { privacy: true, age14: true, version: "2026-07-14" },
+      sajuInput: { date: "1979-06-06" },
+      linkedProvider: "kakao",
+    };
+    h.getDocFromServer
+      .mockResolvedValueOnce(present(partial))
+      .mockResolvedValueOnce(present(partial))
+      .mockResolvedValueOnce(present(full));
+
+    const snap = await readUserDoc("bx6KyF5", NOW, "consent");
+
+    expect(h.getDocFromServer).toHaveBeenCalledTimes(3);
+    expect(snap.data()).toEqual(full);
+  });
+
+  it("needs 를 안 주면 예전처럼 '내용이 있으면' 으로 판단한다", async () => {
+    h.getDocFromServer.mockResolvedValue(present({ linkedProvider: "kakao" }));
+    const snap = await readUserDoc("uid-1", NOW);
+    expect(h.getDocFromServer).toHaveBeenCalledTimes(1);
+    expect(snap.exists()).toBe(true);
+  });
+
   it("★ 기본 예산이 3초를 넘는다 — 850ms 로는 모자랐다(2026-09-05 라이브)", async () => {
     // 이 값을 줄이면 그때 그 버그가 그대로 돌아온다. 실측에서 토큰 교체 창이
     // 850ms(= 옛 기본값 [250,600])를 넘겨, 동의 판정과 이어붙이기가 같은 문서를

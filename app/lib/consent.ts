@@ -96,7 +96,9 @@ export function isConsentValid(c: Consent | null | undefined): boolean {
 //   판정은 **확인된 답만 믿는다.** 못 읽으면 "모름"이지 "없음"이 아니다.
 export async function readConsent(uid: string): Promise<ConsentVerdict> {
   try {
-    const snap = await readUserDoc(uid);
+    // ★ **consent 필드가 올 때까지** 기다린다. 로그인 직후엔 linkedProvider 만 먼저
+    //   보이는 부분 문서가 오는데(2026-09-05 진단), 그걸 답으로 받으면 시트가 뜬다.
+    const snap = await readUserDoc(uid, undefined, "consent");
 
     // ★ **문서가 아예 없으면 "동의 안 함"이 아니라 "모름"이다.**
     //
@@ -121,36 +123,10 @@ export async function readConsent(uid: string): Promise<ConsentVerdict> {
     }
 
     // 문서는 있는데 동의가 없거나 낡았다 → 이건 확인된 "no" 다.
-    const ok = isConsentValid(data.consent as Consent | undefined);
-
-    // 🔬 임시 진단 (2026-09-05) — "문서엔 유효한 동의가 있는데 왜 no 인가"를 끝낸다.
-    //    no 로 판정될 때만, 그 순간 **실제로 받은 것**을 그대로 찍는다.
-    //    원인 확정 후 이 블록을 지운다. grep: "🔬 임시 진단"
-    if (!ok) {
-      const meta = (snap as unknown as { metadata?: { fromCache?: boolean } }).metadata;
-      console.log(
-        "[wl] no 판정 상세",
-        "| fromCache =", meta?.fromCache,
-        "| keys =", Object.keys(data).join(","),
-        "| consent =", JSON.stringify(data.consent ?? null),
-      );
-      // 1.5초 뒤 같은 문서를 다시 읽어 비교한다 — 타이밍 문제인지 데이터 문제인지 갈린다.
-      setTimeout(() => {
-        void readUserDoc(uid, [])
-          .then((s2) => {
-            const d2 = s2.data();
-            console.log(
-              "[wl] 1.5초 뒤 재조회",
-              "| exists =", s2.exists(),
-              "| keys =", d2 ? Object.keys(d2).join(",") : "(없음)",
-              "| consent =", JSON.stringify(d2?.consent ?? null),
-            );
-          })
-          .catch((e) => console.log("[wl] 1.5초 뒤 재조회 실패", e));
-      }, 1500);
-    }
-
-    return { uid, status: ok ? "yes" : "no" };
+    return {
+      uid,
+      status: isConsentValid(data.consent as Consent | undefined) ? "yes" : "no",
+    };
   } catch (e) {
     // 읽지 못한 것뿐이다 — "동의 안 함"으로 단정하지 않는다.
     console.error("[consent] 동의 조회 실패", uid, e);

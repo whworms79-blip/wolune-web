@@ -56,20 +56,40 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
  * 정상 사용자 문서는 최소 한 필드(consent·sajuInput·linkedProvider 중 하나)를 갖는다.
  * 필드가 하나도 없는 문서는 정상 상태가 아니므로 "아직 못 받았다"로 본다.
  */
-const hasContent = (snap: DocumentSnapshot): boolean =>
-  snap.exists() && Object.keys(snap.data() ?? {}).length > 0;
+/**
+ * 답이 다 왔는가.
+ *
+ * ★ 2026-09-05 라이브 진단이 알려준 것 — 로그인 직후의 읽기는 **부분 문서**를 돌려준다:
+ *     no 판정 상세  | fromCache = false | keys = linkedProvider | consent = null
+ *     1.5초 뒤 재조회 | keys = consent,sajuInput,linkedProvider  ← 그제야 다 온다
+ *   서버 답인데도(fromCache=false) 필드가 하나뿐이었다. 로그인 직후 쓰이는
+ *   linkedProvider 만 먼저 보인 것이다.
+ *
+ *   그래서 "문서가 있나"(exists) 도, "내용이 있나"(필드 ≥ 1) 도 기준이 될 수 없다.
+ *   두 기준 다 이 부분 문서를 정답으로 통과시켜, 동의 시트가 다시 떴다.
+ *   **호출부가 필요한 필드가 왔는지**를 기준으로 삼아야 한다.
+ *
+ * @param needs 이 필드가 보일 때까지 기다린다. 생략하면 '문서에 내용이 있으면' 으로 본다.
+ */
+const isReady = (snap: DocumentSnapshot, needs?: string): boolean => {
+  if (!snap.exists()) return false;
+  const d = snap.data();
+  if (!d || Object.keys(d).length === 0) return false;
+  return needs ? d[needs] !== undefined : true;
+};
 
 export async function readUserDoc(
   uid: string,
   retryMs: readonly number[] = DEFAULT_RETRY_MS,
+  needs?: string,
 ): Promise<DocumentSnapshot> {
   let snap = await getDocFromServer(doc(db, "users", uid));
   for (const ms of retryMs) {
-    if (hasContent(snap)) return snap; // 내용까지 온 답이면 끝 — 추가 비용 없음
+    if (isReady(snap, needs)) return snap; // 필요한 게 왔으면 끝 — 추가 비용 없음
     await sleep(ms);
     snap = await getDocFromServer(doc(db, "users", uid));
   }
-  // 예산을 다 써도 내용이 없다 → 진짜 없는 것으로 본다(신규 사용자).
+  // 예산을 다 써도 안 왔다 → 진짜 없는 것으로 본다.
   // 호출부는 이걸 '확정된 없음'으로 단정하지 않는다(consent.ts readConsent 참고).
   return snap;
 }

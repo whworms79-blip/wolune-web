@@ -9,7 +9,13 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 //  · saveConsent 는 실패를 성공한 척하지 않는다.
 
 const h = vi.hoisted(() => ({
-  readUserDoc: vi.fn<(uid: string) => Promise<{ data: () => unknown }>>(),
+  readUserDoc:
+    vi.fn<
+      (uid: string, retryMs?: readonly number[], needs?: string) => Promise<{
+        exists: () => boolean;
+        data: () => unknown;
+      }>
+    >(),
   setDoc: vi.fn<(ref: unknown, data: unknown, opts?: unknown) => Promise<void>>(),
   doc: vi.fn((_db: unknown, ...path: string[]) => ({ path: path.join("/") })),
   ensureSignedIn: vi.fn<() => Promise<string>>(),
@@ -49,7 +55,9 @@ describe("readConsent", () => {
     await readConsent("bx6KyF5");
 
     expect(h.readUserDoc).toHaveBeenCalledTimes(1);
-    expect(h.readUserDoc).toHaveBeenCalledWith("bx6KyF5");
+    // ★ needs="consent" 까지 넘겨야 한다. 이걸 빼면 로그인 직후의 **부분 문서**
+    //   (linkedProvider 만 담긴)를 정답으로 받아 동의 시트가 다시 뜬다(2026-09-05 실측).
+    expect(h.readUserDoc).toHaveBeenCalledWith("bx6KyF5", undefined, "consent");
   });
 
   it("유효한 동의가 있으면 yes (uid 를 함께 실어 돌려준다)", async () => {

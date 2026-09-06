@@ -24,7 +24,7 @@ function WoluneMark() {
       className="mark"
       viewBox="0 0 100 100"
       role="img"
-      aria-label="Wolune 로고 — 작은 별을 품은 초승달"
+      aria-label="Wolune 로고 — 초승달과 작은 별"
     >
       {/* 초승달: 바깥 원에서 안쪽 원을 빼 초승달 형태 */}
       <defs>
@@ -35,9 +35,13 @@ function WoluneMark() {
         </mask>
       </defs>
       <circle cx="50" cy="50" r="34" fill="#e8c06a" mask="url(#crescent)" />
-      {/* 품은 별 */}
+      {/* 별 — 초승달 **바깥** 오른쪽 위.
+          2026-09-06 변경: 원래는 초승달의 오목한 품 안(64,46)에 있었는데,
+          그건 별과 초승달(☪)과 같은 배치라 사주 앱과 무관한 상징으로 읽혔다.
+          ⚠ app/tools/make_icon.py(star_points)·welcome_screen.dart 와 같은 값. */}
       <path
-        d="M64 46 l2.2 5.6 6 .5 -4.6 3.9 1.5 5.9 -5.1 -3.2 -5.1 3.2 1.5 -5.9 -4.6 -3.9 6 -.5 z"
+        d="M80 15.5 L81.566 19.844 L86.182 19.991 L82.535 22.824 L83.821 27.259
+           L80 24.665 L76.179 27.259 L77.465 22.824 L73.818 19.991 L78.434 19.844 Z"
         fill="#f3ecdd"
       />
     </svg>

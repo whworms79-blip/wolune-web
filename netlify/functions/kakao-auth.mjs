@@ -84,7 +84,12 @@ export async function accessToken(scope = SCOPE_DATASTORE) {
     }),
   });
   const t = await r.json();
-  if (!t.access_token) throw new Error(`액세스 토큰 실패: ${JSON.stringify(t)}`);
+  if (!t.access_token) {
+    // 조용히 throw 하면 호출부의 catch 가 500 만 반환하고 이유가 사라진다.
+    // 서비스계정 오류(키 만료·권한 없음 등)는 여기서만 드러난다.
+    console.error("[kakao] 서비스계정 액세스 토큰 실패", r.status, JSON.stringify(t));
+    throw new Error(`액세스 토큰 실패: ${JSON.stringify(t)}`);
+  }
   return t.access_token;
 }
 
@@ -178,10 +183,24 @@ export default async (req) => {
     const projectId = sa().project_id;
     const { idToken, accessToken: kakaoAccessToken, code, redirectUri } = await req.json();
 
+    // 어디까지 갔는지 남긴다. **토큰 값은 절대 찍지 않는다** — 유무와 길이만.
+    //   이게 없어서 2026-09-08 에 "앱에서 카카오 로그인이 실패하는데 로그가 하나도 없는"
+    //   상태로 반나절을 썼다. 성공/실패 어느 쪽이든 흔적은 남아야 한다.
+    console.log("[kakao] 요청", {
+      hasIdToken: !!idToken,
+      idTokenLen: idToken ? String(idToken).length : 0,
+      hasAccessToken: !!kakaoAccessToken,
+      hasCode: !!code,
+    });
+
     // ① 호출자 신원 검증 — 이 익명 계정의 주인이 맞는지
-    if (!idToken) return json({ error: "idToken이 필요합니다." }, 400);
+    if (!idToken) {
+      console.error("[kakao] idToken 없음 — 앱이 익명 세션 없이 호출했다");
+      return json({ error: "idToken이 필요합니다." }, 400);
+    }
     const decoded = await verifyIdToken(idToken, projectId);
     const currentUid = decoded.sub;
+    console.log("[kakao] idToken 검증 통과", { uid: currentUid, path: kakaoAccessToken ? "app" : "web" });
 
     // ② 카카오 액세스 토큰 — 앱은 직접 전달, 웹은 인가코드를 교환
     let kakaoToken = kakaoAccessToken;
@@ -235,8 +254,15 @@ export default async (req) => {
 
     // ⑤ 커스텀 토큰 발급
     const customToken = createCustomToken(uid, { provider: "kakao", kakaoId });
+    // 성공도 남긴다 — 침묵이 "성공"인지 "조용한 실패"인지 구분되어야 한다.
+    console.log("[kakao] 완료", { switched });
     return json({ customToken, switched, nickname });
   } catch (e) {
+    // ★ 여기가 가장 오래 눈을 가렸던 자리다. verifyIdToken 실패·서비스계정 오류·JSON 파싱
+    //   실패가 전부 이리로 빠지는데 **아무것도 남기지 않고** 500 만 돌려줬다.
+    //   앱은 그 500 의 본문마저 버리므로(auth.dart 의 statusCode != 200 → failed),
+    //   양쪽이 동시에 침묵해 원인을 볼 방법이 없었다. 실패는 시끄러워야 한다.
+    console.error("[kakao] 처리 실패", String(e?.stack ?? e?.message ?? e));
     return json({ error: "서버 오류", detail: String(e?.message ?? e) }, 500);
   }
 };

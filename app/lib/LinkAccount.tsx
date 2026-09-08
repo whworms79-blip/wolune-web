@@ -31,6 +31,35 @@ import { ensureSignedIn, isAnonymous, linkGoogle, startKakaoLogin } from "./fire
  *     의 것을 그대로 옮긴 것 — 직접 그린 말풍선을 쓰면 안 된다.
  *   · 모서리: 12px.
  */
+/**
+ * 구글 공식 'G' 마크.
+ *
+ * ⚠ **직접 그리지 말 것.** 구글 브랜딩 가이드는 마크를 재현하는 것을 금지한다
+ *   (카카오 심볼과 같은 규정). 아래 path 는 Google Identity 브랜드 가이드라인의
+ *   「Customize Google Sign in Button」이 생성한 HTML 에서 그대로 옮긴 것이고,
+ *   원본은 `app/assets/google/google_button.html`(Flutter 저장소)에 보관돼 있다.
+ *
+ * ⚠ 앱(`GoogleGMark`)과 **같은 값**이어야 한다 — 한쪽만 바꾸면 두 제품이 갈라진다.
+ */
+export function GoogleGMark({ size = 18 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 48 48"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+      <path fill="none" d="M0 0h48v48H0z" />
+    </svg>
+  );
+}
+
 export function KakaoButton({
   label = "카카오 로그인",
   disabled,
@@ -154,6 +183,7 @@ function LinkCtas({
           onClick={onGoogle}
           disabled={busy}
         >
+          <GoogleGMark />
           {busy ? "연결 중…" : googleLabel}
         </button>
         <button type="button" className="link-later" onClick={onLater} disabled={busy}>

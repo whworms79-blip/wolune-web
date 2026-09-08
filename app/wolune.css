@@ -459,3 +459,19 @@
 .wl-bottom-nav__tab svg { width: 21px; height: 21px; }
 .wl-bottom-nav__tab span { font-size: var(--fs-micro); }
 .wl-bottom-nav__tab--active { color: var(--gold); }
+
+/* ── §7 정서적 안전 — 지속적 저기분 돌봄 안내 ──────────────────────────────
+   앱(link 없음, Flutter _LowMoodNote)과 같은 표현: 라벤더 + 좌측 액센트.
+   디자인 시스템 §5.1 이 '돌봄·제안'에 배정한 조합이다 —
+   골드(CTA)도 로즈(관계)도 이 자리엔 맞지 않는다. 경고가 아니라 인사에 가깝게. */
+.low-mood__title       { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.low-mood__text        { line-height: 1.6; margin-bottom: 10px; color: var(--text-secondary); }
+.low-mood__text:last-of-type { margin-bottom: 14px; }
+.low-mood__actions     { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.low-mood__call {
+  display: inline-flex; align-items: center; gap: 8px;
+  color: var(--lavender); text-decoration: none;
+  font-size: var(--fs-body); font-weight: var(--fw-medium);
+  padding: 8px 2px;
+}
+.low-mood__call:hover  { text-decoration: underline; }

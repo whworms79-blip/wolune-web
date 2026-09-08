@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { loadSajuInput, fetchChart, type SajuInput } from "../lib/sajuInput";
 import {
@@ -21,6 +21,11 @@ import {
   INSIGHT_THRESHOLD,
   type Insight,
 } from "../lib/insight";
+import {
+  canShowLowMoodNotice,
+  hasSustainedLowMood,
+  markLowMoodNoticeShown,
+} from "../lib/moodJournal";
 import { pad } from "../lib/time";
 import { useConsent } from "../lib/ConsentGate";
 import "./journal.css";
@@ -118,6 +123,12 @@ export default function JournalPage() {
   const [insight, setInsight] = useState<Insight | null>(null);
   // 통찰이 처음 열릴 때 "계산은 서버에서, 메모는 안 보냄"을 한 번만 알린다.
   const [notice, setNotice] = useState(false);
+  // §7 정서적 안전 — 지속적 저기분일 때만, 그것도 아주 가끔만 띄우는 돌봄 안내.
+  const [showLowMoodNote, setShowLowMoodNote] = useState(false);
+  // 이 세션에서 이미 띄웠는가. **state 가 아니라 ref 인 이유**: 판정 effect 가 이 값을
+  // 읽되 이것 때문에 다시 돌 필요는 없다. localStorage 를 못 쓰는 환경(프라이빗 모드)에서
+  // 억제가 통하지 않아 닫아도 다시 뜨는 일을 막는 마지막 방어선이기도 하다.
+  const lowMoodShownRef = useRef(false);
   const [showLinkCard, setShowLinkCard] = useState(false);
   const [showInsightLink, setShowInsightLink] = useState(false);
 
@@ -229,6 +240,16 @@ export default function JournalPage() {
     const unlockedNow = insight?.unlocked ?? false;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- 로그인 상태·로컬 플래그(SSR 불일치 방지)
     setShowLinkCard(shouldShowJournalCard(entries.length, unlockedNow));
+    // 띄우기로 정한 순간 바로 '봤음'으로 기록한다 — 닫든 안 닫든 당분간 다시 묻지 않는다.
+    // 매번 다시 들이미는 건 그 자체로 반추를 부추긴다(§7).
+    if (!lowMoodShownRef.current) {
+      const now = new Date();
+      if (hasSustainedLowMood(entries, now) && canShowLowMoodNotice(now)) {
+        lowMoodShownRef.current = true;
+        markLowMoodNoticeShown(now);
+        setShowLowMoodNote(true);
+      }
+    }
     setShowInsightLink(shouldShowInsightCard(unlockedNow));
   }, [entries, insight]);
 
@@ -470,6 +491,43 @@ export default function JournalPage() {
             <LinkInsightCard onDone={() => setShowInsightLink(false)} />
           )}
         </div>
+
+        {/* §7 정서적 안전 — 지속적 저기분 돌봄 안내.
+            ⚠ 자리 순서가 곧 우선순위다. 계정 연결 유도 카드보다 **위**에 둔다.
+            힘든 사람에게 돌봄보다 가입 권유를 먼저 보이면 그게 바로
+            PRD 가 금지한 'engagement > wellbeing' 이다. */}
+        {showLowMoodNote && (
+          <div className="section-gap">
+            <section className="wl-card wl-card--lavender wl-card--accent low-mood">
+              <h2 className="wl-body-l low-mood__title">
+                <span aria-hidden="true">🌿</span> 혼자 두고 싶지 않아서요
+              </h2>
+              <p className="wl-body-s low-mood__text">
+                가라앉은 날이 며칠 이어졌네요. 그런 시기는 누구에게나 옵니다. 다만 그
+                이유를 사주에서만 찾지는 않으셨으면 해요.
+              </p>
+              <p className="wl-body-s low-mood__text">
+                믿을 수 있는 사람에게 오늘 이야기를 건네보는 건 어떨까요. 필요하다면
+                전문적인 도움을 받는 것도 좋은 선택이에요 — 정신건강 상담전화는 24시간,
+                무료예요.
+              </p>
+              <div className="low-mood__actions">
+                {/* 보건복지부 정신건강 위기상담전화. 자살예방(109)이 아니라 이쪽인 이유는
+                    인계서 참고 — 이 카드는 '며칠 가라앉았다'에 뜬다. */}
+                <a className="low-mood__call" href="tel:15770199">
+                  📞 마음 상담 1577-0199
+                </a>
+                <button
+                  type="button"
+                  className="link-later"
+                  onClick={() => setShowLowMoodNote(false)}
+                >
+                  괜찮아요
+                </button>
+              </div>
+            </section>
+          </div>
+        )}
 
         {/* ② 기록이 쌓였을 때(7건~, 통찰 전) — 통찰이 열리면 뜨지 않는다 */}
         {showLinkCard && (
